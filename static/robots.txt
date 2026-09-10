@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /$
+Allow: /post-job
+
+# The authenticated app is a client-rendered shell — nothing to index.
+Disallow: /app/
+
+Sitemap: https://pointbreaklab.com/sitemap.xml

@@ -1,0 +1,22 @@
+id: profile-shiplogs
+name: Ship Logs
+version: 0.1.0
+enabled: true
+description: A candidate record of things shipped, with evidence — not duties performed.
+
+routes:
+  - path: /app/profile
+    component: components/ShipLogList.svelte
+    nav:
+      label: Profile
+      icon: user
+      order: 40
+
+permissions:
+  - github:read:user
+  - github:write:repo
+  - db:profiles:read
+  - db:profiles:write
+
+requires:
+  core: '>=0.1.0'

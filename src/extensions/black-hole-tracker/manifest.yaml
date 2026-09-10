@@ -1,0 +1,20 @@
+id: black-hole-tracker
+name: Black Hole Tracker
+version: 0.1.0
+enabled: true
+description: Records what companies do not do. A non-response is a data point with a timestamp.
+
+routes:
+  - path: /app/tracker
+    component: components/ApplicationStatus.svelte
+    nav:
+      label: Tracker
+      icon: radar
+      order: 30
+
+permissions:
+  - db:applications:read
+  - db:applications:write
+
+requires:
+  core: '>=0.1.0'

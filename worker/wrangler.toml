@@ -1,0 +1,22 @@
+name = "pointbreak-receipts"
+main = "src/index.ts"
+compatibility_date = "2024-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The ONLY server in this architecture. It exists for two reasons:
+#   1. Stripe cannot webhook into a static site.
+#   2. The receipt signing key must never reach the browser.
+# It stores nothing. Everything it produces is written back to Git.
+
+[vars]
+DATA_REPO = "pointbreak-network/data"
+ALLOWED_ORIGIN = "https://pointbreaklab.com"
+
+# Secrets — set with `wrangler secret put <NAME>`, never in this file:
+#   STRIPE_SECRET_KEY
+#   STRIPE_WEBHOOK_SECRET
+#   RECEIPT_SIGNING_KEY   (Ed25519 private key, base64)
+#   GITHUB_APP_TOKEN      (write access to the data repo)
+
+[observability]
+enabled = true

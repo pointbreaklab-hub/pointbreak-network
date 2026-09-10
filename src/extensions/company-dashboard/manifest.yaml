@@ -1,0 +1,22 @@
+id: company-dashboard
+name: Company Dashboard
+version: 0.1.0
+enabled: true
+description: Ghost-score warnings and applicant management for companies that post.
+
+routes:
+  - path: /app/company
+    component: components/ApplicantManager.svelte
+    nav:
+      label: Company
+      icon: building
+      order: 60
+
+permissions:
+  - db:jobs:read
+  - db:jobs:write
+  - db:applications:read
+  - db:applications:write
+
+requires:
+  core: '>=0.1.0'

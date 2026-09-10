@@ -1,0 +1,38 @@
+{
+  "name": "pointbreak-network",
+  "version": "0.1.0",
+  "description": "A serverless, Git-backed job network. Math over emotion.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "net": "tsx scripts/net-cli.ts",
+    "worker:dev": "wrangler dev --config worker/wrangler.toml",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.toml"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.1.0",
+    "dexie": "^4.0.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240909.0",
+    "@rollup/plugin-yaml": "^4.1.2",
+    "@sveltejs/adapter-static": "^3.0.4",
+    "@sveltejs/kit": "^2.5.27",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "js-yaml": "^4.1.0",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0",
+    "wrangler": "^3.78.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

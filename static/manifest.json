@@ -1,0 +1,13 @@
+{
+  "name": "PointBreak Network",
+  "short_name": "PointBreak",
+  "description": "A serverless, Git-backed job network. Math over emotion.",
+  "start_url": "/app/feed",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

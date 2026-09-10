@@ -1,0 +1,19 @@
+id: job-board
+name: Job Board
+version: 0.1.0
+enabled: true
+description: Browse postings with disclosed funnel stats and client-side ghost scoring.
+
+routes:
+  - path: /app/jobs
+    component: components/JobFeed.svelte
+    nav:
+      label: Jobs
+      icon: briefcase
+      order: 20
+
+permissions:
+  - db:jobs:read
+
+requires:
+  core: '>=0.1.0'
