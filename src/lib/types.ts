@@ -1,105 +1,94 @@
 /**
- * Canonical shapes for everything stored in Git.
- * Prose version: docs/API_SPECS.md
+ * Shapes for everything stored in Git.
+ *
+ * snake_case throughout, matching the schema reference in the master plan —
+ * these are wire formats read straight out of JSON files, not internal models,
+ * so they keep the on-disk casing rather than being converted at the boundary.
  */
 
 export type ISODate = string;
 
-/* ---------- Jobs ---------- */
+/* ---------- Profile (user.json) ---------- */
 
-export type JobStatus = 'open' | 'filled' | 'withdrawn' | 'expired';
-export type LocationType = 'remote' | 'hybrid' | 'onsite';
+export interface VerifiedSkill {
+  skill: string;
+  /** Commit count is the evidence. Claimed proficiency is not stored. */
+  commits: number;
+}
 
-export interface Compensation {
+export interface ShipLog {
+  repo: string;
+  pr: number;
+  merged_at: ISODate;
+  title?: string;
+  url?: string;
+}
+
+export interface UserProfile {
+  github_login: string;
+  verified_skills: VerifiedSkill[];
+  ship_logs: ShipLog[];
+  display_name?: string;
+  updated_at?: ISODate;
+}
+
+/* ---------- Jobs (job.json) ---------- */
+
+/**
+ * Exact salary is mandatory. `min`/`max` exist for roles with a genuine band,
+ * but a wide band is rejected at submit — see `isExactSalary()` in utils.
+ */
+export interface Salary {
   min: number;
   max: number;
   currency: string;
   period: 'year' | 'month' | 'day' | 'hour';
-  equity?: string;
 }
 
-/** The disclosed funnel. Every field is optional; missing fields lower confidence. */
-export interface Disclosure {
-  applicationsReceived?: number;
-  advancedToScreen?: number;
-  advancedToOnsite?: number;
-  offersExtended?: number;
-  hires?: number;
-  lastUpdated?: ISODate;
+/** The action metrics a Ghost Score is computed from. */
+export interface JobMetrics {
+  applications: number;
+  views: number;
+  interviews_scheduled: number;
+  rejections_sent: number;
+  /** Count of prior near-identical postings by the same company. */
+  reposts: number;
 }
 
-export interface JobPost {
+export type JobStatus = 'open' | 'closed';
+export type CloseReason = 'external_hire' | 'internal_hire' | 'cancelled';
+
+export interface Job {
   id: string;
-  companyId: string;
+  company_id: string;
   title: string;
-  location: { type: LocationType; region?: string };
-  compensation: Compensation;
+  salary: Salary;
+  tech_stack: string[];
   description: string;
-  postedAt: ISODate;
-  closesAt?: ISODate;
+  posted_at: ISODate;
   status: JobStatus;
-  disclosure: Disclosure;
-  receiptId?: string;
+  closed_at?: ISODate;
+  close_reason?: CloseReason;
+  metrics: JobMetrics;
+  receipt_id?: string;
 }
 
-/* ---------- Companies & profiles ---------- */
+/* ---------- Applications (event log) ---------- */
 
-export interface CompanyProfile {
-  id: string;
-  name: string;
-  website?: string;
-  githubOrg?: string;
-  verifiedAt?: ISODate;
-  trustScore?: number;
-}
-
-export interface ShipLog {
-  id: string;
-  login: string;
-  title: string;
-  shippedAt: ISODate;
-  skills: string[];
-  evidence: Array<{ type: 'repo' | 'writeup' | 'demo' | 'other'; url: string }>;
-  verifiedBy?: string[];
-}
-
-export interface Profile {
-  login: string;
-  displayName?: string;
-  shipLogs: ShipLog[];
-  skills: Record<string, number>;
-  openTo?: LocationType[];
-}
-
-/* ---------- Applications ---------- */
-
-export type ApplicationStage =
-  | 'submitted'
-  | 'screen'
-  | 'onsite'
-  | 'offer'
-  | 'hired'
-  | 'rejected'
-  | 'ghosted';
-
-export interface StageTransition {
-  stage: ApplicationStage;
-  at: ISODate;
-  /** true when inferred from silence rather than reported by the company */
-  inferred?: boolean;
-}
+export type ApplicationStatus = 'submitted' | 'viewed' | 'interviewing' | 'rejected';
 
 export interface Application {
-  jobId: string;
-  login: string;
-  submittedAt: ISODate;
-  history: StageTransition[];
-  lastCompanyContactAt?: ISODate;
+  job_id: string;
+  github_login: string;
+  status: ApplicationStatus;
+  submitted_at: ISODate;
+  /** Last time the company did anything. Silence here is the whole signal. */
+  last_action_at: ISODate;
 }
 
-/* ---------- Receipts ---------- */
+/* ---------- Receipts (receipt.json) ---------- */
 
-export type ReceiptKind = 'job_post_payment' | 'outcome_attestation';
+export type ReceiptKind = 'job_post_payment';
 
 export interface Receipt {
   id: string;
@@ -107,42 +96,58 @@ export interface Receipt {
   subject: string;
   amount: number;
   currency: string;
-  issuedAt: ISODate;
+  issued_at: ISODate;
   signature: string;
-  publicKeyId: string;
+  public_key_id: string;
 }
 
-/* ---------- Scores ---------- */
+/* ---------- Derived: scores and states ---------- */
 
-export interface Signal {
-  name: string;
-  weight: number;
-  /** normalized 0..1, where 1 is the worst outcome for the subject */
-  value: number;
+/** One applied Ghost Score rule and what it contributed. */
+export interface ScoreRule {
+  id: string;
+  label: string;
+  points: number;
+  applied: boolean;
 }
+
+export type GhostBand = 'active' | 'evergreen' | 'ghost';
 
 export interface GhostScore {
-  jobId: string;
+  job_id: string;
+  /** 0–100. Higher is worse. */
   score: number;
-  confidence: number;
-  signals: Signal[];
+  band: GhostBand;
+  breakdown: ScoreRule[];
 }
 
-export interface TrustScore {
-  companyId: string;
-  score: number;
-  confidence: number;
-  signals: Signal[];
+export type TrackedState = ApplicationStatus | 'black_hole';
+
+export interface BlackHoleState {
+  job_id: string;
+  github_login: string;
+  state: TrackedState;
+  days_silent: number;
+  is_black_hole: boolean;
+  /** How many other candidates are stuck on this same posting. */
+  squad_size?: number;
+}
+
+export interface RepostMatch {
+  job_id: string;
+  title: string;
+  posted_at: ISODate;
+  similarity: number;
 }
 
 /* ---------- Messaging ---------- */
 
 export interface MessageRequest {
-  threadId: string;
+  thread_id: string;
   from: string;
   to: string;
-  sentAt: ISODate;
-  /** ciphertext; the shell never sees plaintext it did not decrypt locally */
+  sent_at: ISODate;
+  /** Ciphertext. Nothing renders until it is decrypted locally. */
   body: string;
   accepted?: boolean;
 }
@@ -168,6 +173,5 @@ export interface ExtensionManifest {
 
 export interface LoadedExtension {
   manifest: ExtensionManifest;
-  /** lazy loaders keyed by the manifest's `component` path */
   components: Record<string, () => Promise<unknown>>;
 }

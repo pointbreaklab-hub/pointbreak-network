@@ -12,25 +12,9 @@
   const items = $derived(navItems(extensions));
 </script>
 
-<div class="shell">
+<div class="flex min-h-screen flex-col bg-bg text-fg">
   <Nav {items} />
-  <main>
+  <main class="mx-auto w-full max-w-5xl flex-1 px-5 py-8">
     {@render children()}
   </main>
 </div>
-
-<style>
-  .shell {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg);
-    color: var(--fg);
-  }
-  main {
-    flex: 1;
-    width: min(72rem, 100% - 2.5rem);
-    margin-inline: auto;
-    padding-block: 2rem;
-  }
-</style>

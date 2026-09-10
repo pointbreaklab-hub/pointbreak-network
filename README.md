@@ -71,18 +71,23 @@ Disabled extensions are tree-shaken out of the bundle entirely. Manifest schema:
 
 ## The Ghost Score
 
-Computed in the browser, from published inputs, by
-[`src/core/math-engine/ghost-job.ts`](src/core/math-engine/ghost-job.ts):
+Computed in the browser by
+[`src/core/math-engine/ghost-score.ts`](src/core/math-engine/ghost-score.ts).
+A flat rule table, clamped to 0–100, where higher is worse:
 
-| Signal | Weight |
+| Δ | Condition |
 |---|---|
-| `staleness` | 0.30 |
-| `responseRate` | 0.30 |
-| `funnelDropoff` | 0.20 |
-| `repostFrequency` | 0.20 |
+| +20 | Open > 30 days with 0 interviews and 0 rejections |
+| +30 | Identical description reposted more than twice |
+| +20 | More than 100 applications with 0 interviews |
+| −5 | Per interview scheduled |
+| −1 | Per rejection sent |
 
-A company that discloses nothing does not get a good score — it gets low
-`confidence`, and low-confidence postings rank below disclosed ones.
+Bands: 🟢 Active (<30) · 🟡 Evergreen (30–59) · 🔴 Ghost job (≥60).
+
+A company lowers its score by *acting* — scheduling interviews, sending
+rejections, closing filled roles. Nothing else moves it, and nothing can be
+bought.
 
 ## Deployment
 
@@ -102,9 +107,11 @@ Worker secrets are set with `wrangler secret put` and never committed:
 
 ## Status
 
-Early scaffold. The architecture, schemas, and scoring model are in place; most
-data wiring is still marked `TODO`.
+Phases 1, 2, 5 and most of 6 are in place: static shell, auth, GitHub wrapper,
+cache, and the full math engine. Phases 3 and 4 are UI components without their
+data wiring. See [docs/ROADMAP.md](docs/ROADMAP.md) for the checklist and the
+open questions.
 
 ## License
 
-Not yet chosen — see [#1](../../issues/1).
+Not yet chosen — see [docs/ROADMAP.md](docs/ROADMAP.md#open-questions).

@@ -4,7 +4,7 @@
 
 <svelte:head><title>Feed · PointBreak</title></svelte:head>
 
-<h1>Signed in as {session.current?.login}</h1>
+<h1>Signed in as {session.current?.github_login}</h1>
 <p class="lede">
   The feed aggregates new postings, funnel updates from companies you applied to, and silence
   crossing the ghost threshold.

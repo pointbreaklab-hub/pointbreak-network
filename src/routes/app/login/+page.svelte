@@ -13,9 +13,9 @@
     try {
       device = await requestDeviceCode();
       const token = await pollForToken(device);
-      session.signIn({ token, login: '' });
+      session.signIn({ token, github_login: '' });
       const user = await ghFetch<{ login: string }>('/user');
-      session.signIn({ token, login: user.login });
+      session.signIn({ token, github_login: user.login });
       await goto('/app/feed');
     } catch (e) {
       error = e instanceof Error ? e.message : 'sign-in failed';

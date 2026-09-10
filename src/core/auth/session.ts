@@ -5,7 +5,7 @@ const LOGIN_KEY = 'pb.login';
 
 export interface Session {
   token: string;
-  login: string;
+  github_login: string;
 }
 
 /**
@@ -18,14 +18,14 @@ class SessionStore {
   constructor() {
     if (!browser) return;
     const token = localStorage.getItem(TOKEN_KEY);
-    const login = localStorage.getItem(LOGIN_KEY);
-    if (token && login) this.current = { token, login };
+    const github_login = localStorage.getItem(LOGIN_KEY);
+    if (token && github_login) this.current = { token, github_login };
   }
 
   signIn(session: Session) {
     this.current = session;
     localStorage.setItem(TOKEN_KEY, session.token);
-    localStorage.setItem(LOGIN_KEY, session.login);
+    localStorage.setItem(LOGIN_KEY, session.github_login);
   }
 
   signOut() {

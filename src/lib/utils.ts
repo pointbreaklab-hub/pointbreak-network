@@ -1,24 +1,30 @@
-import type { Compensation } from './types';
-
-/** Clamp into 0..1 so every signal is on the same scale before weighting. */
-export function normalize(value: number, min: number, max: number): number {
-  if (max === min) return 0;
-  return Math.min(1, Math.max(0, (value - min) / (max - min)));
-}
+import type { Salary } from './types';
 
 export function daysBetween(a: string | Date, b: string | Date = new Date()): number {
-  const ms = new Date(b).getTime() - new Date(a).getTime();
-  return ms / 86_400_000;
+  return (new Date(b).getTime() - new Date(a).getTime()) / 86_400_000;
 }
 
-export function formatCompensation(c: Compensation): string {
+export function formatSalary(s: Salary): string {
   const fmt = new Intl.NumberFormat(undefined, {
     style: 'currency',
-    currency: c.currency,
+    currency: s.currency,
     maximumFractionDigits: 0
   });
-  const range = c.min === c.max ? fmt.format(c.min) : `${fmt.format(c.min)}–${fmt.format(c.max)}`;
-  return `${range}/${c.period}`;
+  const range = s.min === s.max ? fmt.format(s.min) : `${fmt.format(s.min)}–${fmt.format(s.max)}`;
+  return `${range}/${s.period}`;
+}
+
+/**
+ * Exact salaries are mandatory, so a "band" wider than 25% of its own midpoint
+ * is rejected at submit — that is the range that stops being information and
+ * starts being a negotiating position.
+ */
+export const MAX_SALARY_SPREAD = 0.25;
+
+export function isExactSalary(s: Salary, maxSpread = MAX_SALARY_SPREAD): boolean {
+  if (s.min <= 0 || s.max < s.min) return false;
+  const midpoint = (s.min + s.max) / 2;
+  return (s.max - s.min) / midpoint <= maxSpread;
 }
 
 export function relativeTime(date: string | Date): string {
@@ -28,7 +34,7 @@ export function relativeTime(date: string | Date): string {
   return rtf.format(-Math.round(days / 30), 'month');
 }
 
-/** Sortable, collision-resistant id. Good enough without pulling in a ULID dep. */
+/** Sortable, collision-resistant id. Enough without pulling in a ULID dep. */
 export function newId(prefix: string): string {
   const time = Date.now().toString(36).padStart(9, '0');
   const rand = crypto.getRandomValues(new Uint8Array(8));

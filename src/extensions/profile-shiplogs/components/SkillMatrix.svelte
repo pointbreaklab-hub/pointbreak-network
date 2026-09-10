@@ -1,26 +1,27 @@
 <script lang="ts">
-  let { skills = {} }: { skills: Record<string, number> } = $props();
+  import type { VerifiedSkill } from '$lib/types';
 
-  // Sorted by demonstrated depth, not self-rating.
-  const ranked = $derived(Object.entries(skills).sort(([, a], [, b]) => b - a));
+  let { skills = [] }: { skills: VerifiedSkill[] } = $props();
+
+  // Ranked by commits, never by self-assessment. The bar is relative to the
+  // user's own top skill — this is a shape, not a cross-user comparison.
+  const ranked = $derived([...skills].sort((a, b) => b.commits - a.commits));
+  const peak = $derived(Math.max(1, ...ranked.map((s) => s.commits)));
 </script>
 
-<ul class="matrix">
-  {#each ranked as [name, level] (name)}
-    <li>
-      <span>{name}</span>
-      <span class="bar" style:--level={level}></span>
-      <span class="tabular">{level.toFixed(1)}</span>
+<ul class="grid gap-1.5">
+  {#each ranked as skill (skill.skill)}
+    <li class="grid grid-cols-[9rem_1fr_4rem] items-center gap-3">
+      <span class="text-sm">{skill.skill}</span>
+      <span class="h-1.5 rounded-full bg-elevated">
+        <span
+          class="block h-full rounded-full bg-accent"
+          style:width="{(skill.commits / peak) * 100}%"
+        ></span>
+      </span>
+      <span class="tabular text-right text-sm text-muted">{skill.commits}</span>
     </li>
+  {:else}
+    <li class="text-muted">No verified skills yet.</li>
   {/each}
 </ul>
-
-<style>
-  .matrix { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
-  li { display: grid; grid-template-columns: 10rem 1fr 3rem; gap: 0.75rem; align-items: center; }
-  .bar { height: 6px; border-radius: 3px; background: var(--border); position: relative; }
-  .bar::after {
-    content: ''; position: absolute; inset: 0 auto 0 0;
-    width: calc(var(--level) * 10%); border-radius: 3px; background: var(--accent);
-  }
-</style>

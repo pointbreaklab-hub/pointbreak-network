@@ -1,3 +1,9 @@
+@import 'tailwindcss';
+
+/* Theme is a data attribute, not a class, so the toggle can set it on <html>
+   before hydration and avoid a flash of the wrong palette. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 :root {
   --bg: #0b0d10;
   --bg-elevated: #14181d;
@@ -26,20 +32,30 @@
   color-scheme: light;
 }
 
-* {
-  box-sizing: border-box;
-}
+/* `inline` so the utilities resolve to the vars above and follow the theme
+   switch at runtime instead of baking in one palette at build time. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-elevated: var(--bg-elevated);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-edge: var(--border);
+  --color-accent: var(--accent);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font-family:
+  --font-sans:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.55;
 }
 
-/* Numbers are the point of this product — align them so they compare cleanly. */
-.tabular {
-  font-variant-numeric: tabular-nums;
+@layer base {
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+  }
+
+  /* Numbers are the product. Align them so they compare cleanly down a column. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
 }

@@ -4,23 +4,17 @@
 
   let { request }: { request: MessageRequest } = $props();
 
-  // Bodies arrive as ciphertext; nothing is rendered until decrypted locally.
+  // Bodies arrive as ciphertext. Nothing renders until it is decrypted locally.
   // TODO: wire up local decryption once key exchange lands.
   let plaintext = $state<string | null>(null);
 </script>
 
-<article>
-  <header>
-    <strong>{request.from}</strong>
-    <span class="meta">{relativeTime(request.sentAt)}</span>
+<article class="mb-2 rounded-lg border border-edge px-4 py-3">
+  <header class="flex justify-between gap-4">
+    <strong class="text-sm">{request.from}</strong>
+    <span class="text-xs text-muted">{relativeTime(request.sent_at)}</span>
   </header>
-  <p class:locked={plaintext === null}>{plaintext ?? 'Encrypted — accept to decrypt.'}</p>
+  <p class="mt-1 text-sm" class:italic={plaintext === null} class:text-muted={plaintext === null}>
+    {plaintext ?? 'Encrypted — accept to decrypt.'}
+  </p>
 </article>
-
-<style>
-  article { border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.6rem; }
-  header { display: flex; justify-content: space-between; gap: 1rem; }
-  .meta { color: var(--fg-muted); font-size: 0.8rem; }
-  p { margin: 0.4rem 0 0; }
-  .locked { color: var(--fg-muted); font-style: italic; }
-</style>

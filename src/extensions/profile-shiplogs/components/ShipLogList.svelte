@@ -3,31 +3,34 @@
   import { relativeTime } from '$lib/utils';
 
   let { logs = [] }: { logs: ShipLog[] } = $props();
+
+  // Merged PRs in reverse chronological order — a timeline of shipped work,
+  // not a list of responsibilities.
+  const timeline = $derived(
+    [...logs].sort((a, b) => Date.parse(b.merged_at) - Date.parse(a.merged_at))
+  );
 </script>
 
-{#if logs.length === 0}
-  <p class="empty">No ship logs yet. A log is one thing you shipped, with a link that proves it.</p>
+{#if timeline.length === 0}
+  <p class="text-muted">
+    No ship logs yet. Sign in and we'll read your merged pull requests from GitHub.
+  </p>
 {:else}
-  <ul class="logs">
-    {#each logs as log (log.id)}
-      <li>
-        <h3>{log.title}</h3>
-        <p class="meta">{relativeTime(log.shippedAt)} · {log.skills.join(', ')}</p>
-        <ul class="evidence">
-          {#each log.evidence as e (e.url)}
-            <li><a href={e.url} rel="noreferrer noopener" target="_blank">{e.type}</a></li>
-          {/each}
-        </ul>
+  <ol class="grid gap-0">
+    {#each timeline as log (log.repo + log.pr)}
+      <li class="border-l border-edge py-3 pl-4">
+        <p class="text-sm">
+          <span class="text-muted">{log.repo}</span>
+          <a
+            href={log.url ?? `https://github.com/${log.repo}/pull/${log.pr}`}
+            target="_blank"
+            rel="noreferrer noopener"
+            class="text-accent">#{log.pr}</a
+          >
+          {#if log.title}<span> — {log.title}</span>{/if}
+        </p>
+        <p class="text-xs text-muted">merged {relativeTime(log.merged_at)}</p>
       </li>
     {/each}
-  </ul>
+  </ol>
 {/if}
-
-<style>
-  .logs { list-style: none; padding: 0; display: grid; gap: 1rem; }
-  .logs > li { border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
-  h3 { margin: 0 0 0.25rem; font-size: 1rem; }
-  .meta { margin: 0; color: var(--fg-muted); font-size: 0.875rem; }
-  .evidence { display: flex; gap: 0.75rem; list-style: none; padding: 0; margin: 0.5rem 0 0; }
-  .empty { color: var(--fg-muted); }
-</style>

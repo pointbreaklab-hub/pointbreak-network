@@ -8,27 +8,26 @@
   const accepted = $derived(requests.filter((r) => r.accepted === true));
 </script>
 
-<section>
-  <h2>Requests <span class="count tabular">{pending.length}</span></h2>
-  {#each pending as request (request.threadId)}
+<p class="mb-6 text-sm text-muted">
+  Anyone can send a request; nobody can pay to skip the queue. Messages are polled, not pushed.
+</p>
+
+<section class="mb-8">
+  <h2 class="mb-2 flex items-center gap-2 text-base font-medium">
+    Requests <span class="tabular font-normal text-muted">{pending.length}</span>
+  </h2>
+  {#each pending as request (request.thread_id)}
     <MessageRequestCard {request} />
   {:else}
-    <p class="empty">No pending requests.</p>
+    <p class="text-sm text-muted">No pending requests.</p>
   {/each}
 </section>
 
 <section>
-  <h2>Accepted</h2>
-  {#each accepted as request (request.threadId)}
+  <h2 class="mb-2 text-base font-medium">Accepted</h2>
+  {#each accepted as request (request.thread_id)}
     <MessageRequestCard {request} />
   {:else}
-    <p class="empty">Nothing here yet.</p>
+    <p class="text-sm text-muted">Nothing here yet.</p>
   {/each}
 </section>
-
-<style>
-  section { margin-bottom: 2rem; }
-  h2 { font-size: 1rem; display: flex; gap: 0.5rem; align-items: center; }
-  .count { color: var(--fg-muted); font-weight: 400; }
-  .empty { color: var(--fg-muted); font-size: 0.9rem; }
-</style>

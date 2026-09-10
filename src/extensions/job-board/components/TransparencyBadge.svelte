@@ -1,35 +1,23 @@
 <script lang="ts">
+  import { BAND_LABELS } from '$core/math-engine';
   import type { GhostScore } from '$lib/types';
 
-  let { score }: { score: GhostScore } = $props();
+  let { score, showValue = false }: { score: GhostScore; showValue?: boolean } = $props();
 
-  // Low confidence is reported as "undisclosed", never as a good score.
-  const label = $derived(
-    score.confidence < 0.3
-      ? 'Undisclosed'
-      : score.score < 0.33
-        ? 'Healthy'
-        : score.score < 0.66
-          ? 'Watch'
-          : 'Likely ghost'
-  );
-
+  const band = $derived(BAND_LABELS[score.band]);
   const tone = $derived(
-    score.confidence < 0.3 ? 'muted' : score.score < 0.33 ? 'ok' : score.score < 0.66 ? 'warn' : 'danger'
+    { active: 'text-ok', evergreen: 'text-warn', ghost: 'text-danger' }[score.band]
   );
 </script>
 
-<span class="badge {tone}" title={`ghost ${score.score} · confidence ${score.confidence}`}>
-  {label}
+<span
+  class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-current px-2 py-0.5 text-xs whitespace-nowrap {tone}"
+  title={score.breakdown
+    .filter((r) => r.applied)
+    .map((r) => `${r.points > 0 ? '+' : ''}${r.points} ${r.label}`)
+    .join('\n') || 'No rules applied'}
+>
+  <span aria-hidden="true">{band.emoji}</span>
+  {band.label}
+  {#if showValue}<span class="tabular opacity-70">{score.score}</span>{/if}
 </span>
-
-<style>
-  .badge {
-    font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 999px;
-    border: 1px solid currentColor; white-space: nowrap;
-  }
-  .ok { color: var(--ok); }
-  .warn { color: var(--warn); }
-  .danger { color: var(--danger); }
-  .muted { color: var(--fg-muted); }
-</style>
