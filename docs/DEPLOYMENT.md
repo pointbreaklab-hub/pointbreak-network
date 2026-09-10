@@ -56,8 +56,17 @@ app.pointbreaklab.com/*  →  https://pointbreaklab.com/app/$1   (301)
 2. Settings → Pages → Custom domain: `pointbreaklab.com`
 3. Wait for the DNS check, then tick **Enforce HTTPS**
 
-`static/CNAME` is committed so the domain survives every deploy. Without it
-Pages drops the custom domain each time the artifact is republished.
+`static/CNAME` is committed and ends up in the artifact, but with the Actions
+artifact flow it does **not** set the custom domain on its own. That only
+happens for branch-based deploys. The domain lives in the repository setting,
+so step 2 above is required and the file is belt-and-braces.
+
+Until the domain is set, the site is served at
+`https://pointbreaklab-hub.github.io/pointbreak-network/`. Asset URLs are
+relative so the page loads there, but in-app links are root-absolute
+(`/app/jobs`), which resolve against the origin rather than the subpath. Client
+side navigation is therefore broken on the github.io URL and correct on the
+apex, which is what `paths.base = ''` in `svelte.config.js` assumes.
 
 ## Build variables
 
