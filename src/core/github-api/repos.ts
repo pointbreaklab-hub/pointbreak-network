@@ -5,7 +5,7 @@
 
 import { ghFetch } from './client';
 
-const DATA_REPO = import.meta.env.PUBLIC_DATA_REPO ?? 'pointbreak-network/data';
+const DATA_REPO = import.meta.env.PUBLIC_DATA_REPO ?? 'pointbreaklab-hub/pointbreak-data';
 
 interface ContentsResponse {
   content: string;

@@ -9,7 +9,7 @@ compatibility_flags = ["nodejs_compat"]
 # It stores nothing. Everything it produces is written back to Git.
 
 [vars]
-DATA_REPO = "pointbreak-network/data"
+DATA_REPO = "pointbreaklab-hub/pointbreak-data"
 ALLOWED_ORIGIN = "https://pointbreaklab.com"
 
 # Secrets — set with `wrangler secret put <NAME>`, never in this file:
