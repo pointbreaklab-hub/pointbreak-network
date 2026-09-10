@@ -1,8 +1,8 @@
 /**
  * Shapes for everything stored in Git.
  *
- * snake_case throughout, matching the schema reference in the master plan —
- * these are wire formats read straight out of JSON files, not internal models,
+ * snake_case throughout, matching the schema reference in the master plan.
+ * These are wire formats read straight out of JSON files, not internal models,
  * so they keep the on-disk casing rather than being converted at the boundary.
  */
 
@@ -36,7 +36,7 @@ export interface UserProfile {
 
 /**
  * Exact salary is mandatory. `min`/`max` exist for roles with a genuine band,
- * but a wide band is rejected at submit — see `isExactSalary()` in utils.
+ * but a wide band is rejected at submit. See `isExactSalary()` in utils.
  */
 export interface Salary {
   min: number;

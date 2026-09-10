@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * net — the PointBreak CLI.
+ * net: the PointBreak CLI.
  *
  *   net list                 show every discovered extension and its state
  *   net enable <id>          flip an extension on
@@ -88,7 +88,7 @@ function deploy(withWorker: boolean): void {
   }
 
   console.log('\nbuild ready in ./build');
-  console.log('Pages deploys on push to main — see .github/workflows/deploy-pages.yml');
+  console.log('Pages deploys on push to main. See .github/workflows/deploy-pages.yml');
 }
 
 function run(cmd: string, args: string[]): void {
@@ -105,7 +105,7 @@ function fail(message: string): never {
 }
 
 function usage(): void {
-  console.log(`net — PointBreak CLI
+  console.log(`net: PointBreak CLI
 
   net list              show every extension and whether it is enabled
   net enable <id>       enable an extension

@@ -47,7 +47,7 @@
         <td class="tabular border-b border-edge px-3 py-2">{row.days_silent}d</td>
         <td class="tabular border-b border-edge px-3 py-2">
           <!-- You are not the only one being ignored. -->
-          {row.squad_size ? `${row.squad_size} stuck here` : '—'}
+          {row.squad_size ? `${row.squad_size} stuck here` : '-'}
         </td>
       </tr>
     {:else}

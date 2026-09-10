@@ -1,7 +1,7 @@
 /**
  * Local cache. Dexie over IndexedDB.
  *
- * This is a cache, never a source of truth — Git is. Anything here can be
+ * This is a cache, never a source of truth, Git is. Anything here can be
  * dropped and refetched. It exists so the app works offline and so we stay
  * under GitHub's API rate limit.
  */

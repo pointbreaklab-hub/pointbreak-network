@@ -12,7 +12,7 @@ compatibility_flags = ["nodejs_compat"]
 DATA_REPO = "pointbreaklab-hub/pointbreak-data"
 ALLOWED_ORIGIN = "https://pointbreaklab.com"
 
-# Secrets — set with `wrangler secret put <NAME>`, never in this file:
+# Secrets. Set with `wrangler secret put <NAME>`, never in this file:
 #   STRIPE_SECRET_KEY
 #   STRIPE_WEBHOOK_SECRET
 #   RECEIPT_SIGNING_KEY   (Ed25519 private key, base64)

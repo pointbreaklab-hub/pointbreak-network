@@ -11,7 +11,7 @@ dist/
 .wrangler/
 worker/dist/
 
-# Secrets — never commit these
+# Secrets. Never commit these
 .env
 .env.*
 !.env.example

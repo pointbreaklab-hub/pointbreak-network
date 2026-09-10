@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-  <title>PointBreak — The Open-Source Professional Network</title>
+  <title>PointBreak: The Open-Source Professional Network</title>
   <meta
     name="description"
     content="Math over emotion. Ghost job scores, black hole tracking, and Git-backed proof of work. No premium tiers, no pay-to-message."

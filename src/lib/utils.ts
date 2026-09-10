@@ -16,7 +16,7 @@ export function formatSalary(s: Salary): string {
 
 /**
  * Exact salaries are mandatory, so a "band" wider than 25% of its own midpoint
- * is rejected at submit — that is the range that stops being information and
+ * is rejected at submit. That is the range that stops being information and
  * starts being a negotiating position.
  */
 export const MAX_SALARY_SPREAD = 0.25;

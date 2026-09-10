@@ -32,7 +32,7 @@ At the registrar, for `pointbreaklab.com`:
 2606:50c0:8003::153
 ```
 
-**CNAME** — `www` → `<github-username>.github.io`
+**CNAME**: `www` → `<github-username>.github.io`
 
 GitHub Pages redirects `www` to the apex automatically once the apex is set as
 the custom domain in repository settings.
@@ -56,7 +56,7 @@ app.pointbreaklab.com/*  →  https://pointbreaklab.com/app/$1   (301)
 2. Settings → Pages → Custom domain: `pointbreaklab.com`
 3. Wait for the DNS check, then tick **Enforce HTTPS**
 
-`static/CNAME` is committed so the domain survives every deploy — without it
+`static/CNAME` is committed so the domain survives every deploy. Without it
 Pages drops the custom domain each time the artifact is republished.
 
 ## Build variables

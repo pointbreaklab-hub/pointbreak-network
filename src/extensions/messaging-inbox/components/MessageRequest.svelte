@@ -15,6 +15,6 @@
     <span class="text-xs text-muted">{relativeTime(request.sent_at)}</span>
   </header>
   <p class="mt-1 text-sm" class:italic={plaintext === null} class:text-muted={plaintext === null}>
-    {plaintext ?? 'Encrypted — accept to decrypt.'}
+    {plaintext ?? 'Encrypted. Accept to decrypt.'}
   </p>
 </article>

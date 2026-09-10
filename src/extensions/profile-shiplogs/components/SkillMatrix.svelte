@@ -4,7 +4,7 @@
   let { skills = [] }: { skills: VerifiedSkill[] } = $props();
 
   // Ranked by commits, never by self-assessment. The bar is relative to the
-  // user's own top skill — this is a shape, not a cross-user comparison.
+  // user's own top skill. This is a shape, not a cross-user comparison.
   const ranked = $derived([...skills].sort((a, b) => b.commits - a.commits));
   const peak = $derived(Math.max(1, ...ranked.map((s) => s.commits)));
 </script>

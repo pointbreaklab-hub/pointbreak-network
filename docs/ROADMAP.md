@@ -23,48 +23,48 @@ These are binding. A change that violates one is a bug, not a trade-off.
    browser.
 5. **ODS modularity.** Features live in `src/extensions/` with `manifest.yaml`.
    `src/core/` handles only routing, auth, and state.
-6. **Auth.** GitHub OAuth Device Flow — no client secrets in the frontend.
+6. **Auth.** GitHub OAuth Device Flow. No client secrets in the frontend.
 7. **Payments.** External Cloudflare Worker. The app only receives and verifies
    a signed receipt.
 
 ---
 
-## Phase 1 — Foundation & landing page
+## Phase 1: Foundation & landing page
 
 - [x] **1.1** SvelteKit + TypeScript + TailwindCSS + `adapter-static`
 - [x] **1.2** Core layout: shell, nav, theme toggle, ODS auto-discovery
-- [x] **1.3** Landing page — hero, features, CTA
+- [x] **1.3** Landing page: hero, features, CTA
 - [x] **1.4** 404 fallback for GitHub Pages SPA routing
 
-## Phase 2 — Auth & core infrastructure
+## Phase 2: Auth & core infrastructure
 
 - [x] **2.1** GitHub OAuth Device Flow (`src/core/auth/`)
 - [x] **2.2** GitHub API wrapper with ETag caching (`src/core/github-api/`)
 - [x] **2.3** Dexie/IndexedDB local cache (`src/core/db/`)
 
-## Phase 3 — Candidate experience
+## Phase 3: Candidate experience
 
-- [ ] **3.1** Ship Logs profile — repos, commit history, verified skills, merged-PR timeline
-- [ ] **3.2** Job board — exact salaries, tech stacks, transparency badges
-- [ ] **3.3** Black Hole Tracker — application states, 14-day flag, Black Hole Squad count
-- [ ] **3.4** Async encrypted messaging — requests, polling, no WebSockets
+- [ ] **3.1** Ship Logs profile: repos, commit history, verified skills, merged-PR timeline
+- [ ] **3.2** Job board: exact salaries, tech stacks, transparency badges
+- [ ] **3.3** Black Hole Tracker: application states, 14-day flag, Black Hole Squad count
+- [ ] **3.4** Async encrypted messaging: requests, polling, no WebSockets
 
-## Phase 4 — Company experience
+## Phase 4: Company experience
 
-- [ ] **4.1** Job creation form — exact salary, client-side repost warning
-- [ ] **4.2** Payment handshake — Worker → Stripe → signed receipt → commit
-- [ ] **4.3** Company dashboard — Ghost Score meter, action nudges, close reasons
+- [ ] **4.1** Job creation form: exact salary, client-side repost warning
+- [ ] **4.2** Payment handshake: Worker → Stripe → signed receipt → commit
+- [ ] **4.3** Company dashboard: Ghost Score meter, action nudges, close reasons
 
-## Phase 5 — The math engine
+## Phase 5: The math engine
 
 - [x] **5.1** Ghost Score (`src/core/math-engine/ghost-score.ts`)
 - [x] **5.2** Black Hole detection (`src/core/math-engine/black-hole.ts`)
 - [x] **5.3** Repost/evergreen detector (`src/core/math-engine/similarity.ts`)
 
-## Phase 6 — Polish & deployment
+## Phase 6: Polish & deployment
 
 - [x] **6.1** GitHub Actions CI/CD
-- [x] **6.2** Domain configuration — apex `pointbreaklab.com`, see [DEPLOYMENT.md](DEPLOYMENT.md)
+- [x] **6.2** Domain configuration: apex `pointbreaklab.com`, see [DEPLOYMENT.md](DEPLOYMENT.md)
 - [x] **6.3** PWA manifest + service worker
 
 ---
@@ -99,7 +99,7 @@ Decisions the plan leaves ambiguous. Resolve before Phase 6.2.
 2. ~~**Landing page indexability.**~~ **Resolved:** rule 3 stands, SSR stays off
    everywhere. Accepted cost: the landing page is a JS-hydrated shell, so
    non-JS crawlers, link previews, and LLM scrapers read nothing from it.
-   Revisit if organic discovery matters later — prerendering only `/` would fix
+   Revisit if organic discovery matters later. Prerendering only `/` would fix
    it without introducing a server.
 3. ~~**Data schemas.**~~ **Resolved:** the inferred `job.json`, application
    event, and `receipt.json` shapes in `src/lib/types.ts` are approved.

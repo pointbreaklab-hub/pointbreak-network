@@ -52,7 +52,7 @@ worker.addEventListener('fetch', (event) => {
   if (url.origin !== location.origin) return;
 
   // Hashed build output is content-addressed, so a cache hit can never be
-  // stale — the filename changes when the content does.
+  // stale. The filename changes when the content does.
   if (url.pathname.startsWith('/_app/immutable/')) {
     event.respondWith(cacheFirst(request));
     return;
@@ -60,7 +60,7 @@ worker.addEventListener('fetch', (event) => {
 
   // Everything else, HTML shells included, is network-first. Serving a cached
   // shell after a deploy hands the user markup that references asset hashes the
-  // new build already deleted — a blank page until they clear site data.
+  // new build already deleted, a blank page until they clear site data.
   event.respondWith(networkFirst(request));
 });
 

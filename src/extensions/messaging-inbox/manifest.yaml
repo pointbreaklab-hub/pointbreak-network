@@ -2,7 +2,7 @@ id: messaging-inbox
 name: Inbox
 version: 0.1.0
 enabled: true
-description: Async encrypted message requests. Opt-in only — no cold outreach without acceptance.
+description: Async encrypted message requests. Opt-in only, no cold outreach without acceptance.
 
 routes:
   - path: /app/messages

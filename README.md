@@ -3,7 +3,7 @@
 A job network with no backend. The client is a static bundle, the database is a
 Git repository, and the ranking algorithm ships in the same repo you're reading.
 
-**Math over emotion** — read the [manifesto](docs/MANIFESTO.md).
+**Math over emotion.** Read the [manifesto](docs/MANIFESTO.md).
 
 ---
 
@@ -13,7 +13,7 @@ Git repository, and the ranking algorithm ships in the same repo you're reading.
 Browser (static SvelteKit bundle on GitHub Pages)
    ├── reads  ──> GitHub REST API  ──> data repo (JSON in Git)
    ├── writes ──> commits signed by the user's own GitHub identity
-   ├── caches ──> IndexedDB (Dexie) — a cache, never a source of truth
+   ├── caches ──> IndexedDB (Dexie), a cache, never a source of truth
    └── scores ──> client-side math engine, no server round-trip
                         │
 Cloudflare Worker ──────┘  the ONLY server: verifies Stripe webhooks and
@@ -35,7 +35,7 @@ Two consequences worth stating plainly:
 | `src/extensions/` | Self-contained features, auto-discovered via `manifest.yaml` |
 | `src/lib/` | Shared types, crypto, utilities |
 | `src/routes/` | SvelteKit file-based routes (thin hosts for extension components) |
-| `worker/` | Cloudflare Worker — Stripe webhook and receipt signer |
+| `worker/` | Cloudflare Worker: Stripe webhook and receipt signer |
 | `scripts/net-cli.ts` | `net` CLI: list/enable/disable extensions, deploy |
 | `docs/` | Manifesto and JSON schema specs |
 
@@ -57,7 +57,7 @@ npm run build
 ## Extensions
 
 A feature is a directory. Drop it under `src/extensions/`, give it a
-`manifest.yaml`, and the registry finds it at build time — there is no central
+`manifest.yaml`, and the registry finds it at build time. There is no central
 list to update.
 
 ```bash
@@ -85,7 +85,7 @@ A flat rule table, clamped to 0–100, where higher is worse:
 
 Bands: 🟢 Active (<30) · 🟡 Evergreen (30–59) · 🔴 Ghost job (≥60).
 
-A company lowers its score by *acting* — scheduling interviews, sending
+A company lowers its score by *acting*: scheduling interviews, sending
 rejections, closing filled roles. Nothing else moves it, and nothing can be
 bought.
 

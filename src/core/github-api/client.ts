@@ -43,7 +43,7 @@ export interface GhResponse<T> {
 
 /**
  * Returns headers alongside the body. Needed because GitHub reports collection
- * sizes only in the `Link` header — asking for one item per page and reading
+ * sizes only in the `Link` header. Asking for one item per page and reading
  * the last page number is the documented way to count commits without paging
  * through all of them.
  */

@@ -2,7 +2,7 @@
  * Extension auto-discovery.
  *
  * Every directory under src/extensions/ with a manifest.yaml is picked up at
- * build time. Adding a feature means adding a folder — no central list to edit.
+ * build time. Adding a feature means adding a folder. No central list to edit.
  * Disabled extensions are dropped here and tree-shaken out of the bundle.
  */
 
@@ -69,7 +69,7 @@ export function navItems(extensions: LoadedExtension[]): NavItem[] {
 
 /**
  * Find the component an enabled extension registered for a route path.
- * Returns null when no enabled extension claims it — which is how a route
+ * Returns null when no enabled extension claims it, which is how a route
  * stays inert after `net disable` instead of 404-ing.
  */
 export function componentFor(

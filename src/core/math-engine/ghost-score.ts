@@ -1,5 +1,5 @@
 /**
- * Ghost Score — 0 to 100, higher is worse.
+ * Ghost Score: 0 to 100, higher is worse.
  *
  * A flat rule table, not a weighted model. Every point on screen traces to one
  * named rule a company can read, argue with, and act on. That is the product:
@@ -13,7 +13,7 @@ export const STALE_AFTER_DAYS = 30;
 export const REPOST_LIMIT = 2;
 export const HIGH_VOLUME_APPLICATIONS = 100;
 
-/** Cutoffs are a product decision, not a derivation — tune them here. */
+/** Cutoffs are a product decision, not a derivation. Tune them here. */
 export const BANDS = { evergreen: 30, ghost: 60 } as const;
 
 export function scoreJob(job: Job): GhostScore {

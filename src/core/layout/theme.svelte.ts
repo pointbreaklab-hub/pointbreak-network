@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 export type Theme = 'light' | 'dark';
-/** Also read by the pre-paint script in src/app.html — keep in sync. */
+/** Also read by the pre-paint script in src/app.html, keep in sync. */
 const KEY = 'pb.theme';
 
 class ThemeStore {

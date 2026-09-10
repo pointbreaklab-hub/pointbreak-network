@@ -1,7 +1,7 @@
 /**
  * Fixture postings, one per interesting Ghost Score shape.
  *
- * Dates are relative so the scores stay put as time passes — hardcoded
+ * Dates are relative so the scores stay put as time passes. Hardcoded
  * timestamps would drift every posting toward "stale" and quietly break the
  * spread this fixture exists to demonstrate.
  *
@@ -84,7 +84,7 @@ export const MOCK_JOBS: Job[] = [
   },
   {
     // Redemption: reposted three times, which adds 30, but the company is
-    // actually hiring — interviews and rejections pull it back to zero.
+    // actually hiring, interviews and rejections pull it back to zero.
     id: 'job_meridian_data',
     company_id: 'meridian-data',
     title: 'Data Engineer',

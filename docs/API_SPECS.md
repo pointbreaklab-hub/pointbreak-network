@@ -4,7 +4,7 @@ All network state is JSON in Git. There is no private API. This document is the
 schema contract between clients.
 
 Canonical TypeScript definitions: [`src/lib/types.ts`](../src/lib/types.ts).
-Field names are `snake_case` — these are on-disk wire formats, read straight out
+Field names are `snake_case`. These are on-disk wire formats, read straight out
 of JSON files.
 
 ---
@@ -84,7 +84,7 @@ self-assessment field, and there is no endorsement field.
 ```
 
 **Exact salary is mandatory.** A band wider than 25% of its own midpoint is
-rejected at submit — see `isExactSalary()` in
+rejected at submit. See `isExactSalary()` in
 [`src/lib/utils.ts`](../src/lib/utils.ts). `metrics` is the sole input to the
 Ghost Score, which is why it is part of the posting rather than private.
 
@@ -134,7 +134,7 @@ Verification: canonicalize every field except `signature`, then check with
 Never stored. Always recomputed client-side, so a tampered file changes the
 inputs but cannot forge the output.
 
-### Ghost Score — `src/core/math-engine/ghost-score.ts`
+### Ghost Score: `src/core/math-engine/ghost-score.ts`
 
 ```jsonc
 {
@@ -158,7 +158,7 @@ inputs but cannot forge the output.
 
 Bands: 🟢 Active `<30` · 🟡 Evergreen `30–59` · 🔴 Ghost `≥60`.
 
-### Black Hole — `src/core/math-engine/black-hole.ts`
+### Black Hole: `src/core/math-engine/black-hole.ts`
 
 ```jsonc
 {
@@ -174,7 +174,7 @@ Bands: 🟢 Active `<30` · 🟡 Evergreen `30–59` · 🔴 Ghost `≥60`.
 Triggered when `last_action_at` is more than 14 days old and status is
 `submitted` or `viewed`.
 
-### Repost detection — `src/core/math-engine/similarity.ts`
+### Repost detection: `src/core/math-engine/similarity.ts`
 
 Jaccard index over stopword-filtered tokens, against the company's 50 most
 recent postings. Default threshold `0.85`. Jaccard rather than cosine because it

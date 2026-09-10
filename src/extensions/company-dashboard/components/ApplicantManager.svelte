@@ -11,7 +11,7 @@
   const CLOSE_REASONS: Array<{ value: CloseReason; label: string }> = [
     { value: 'external_hire', label: 'Hired externally' },
     { value: 'internal_hire', label: 'Hired internally' },
-    { value: 'cancelled', label: 'Cancelled — no hire' }
+    { value: 'cancelled', label: 'Cancelled, no hire' }
   ];
 
   let closeReason = $state<CloseReason | ''>('');

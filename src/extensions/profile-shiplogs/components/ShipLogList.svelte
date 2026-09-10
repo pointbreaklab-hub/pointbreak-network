@@ -4,7 +4,7 @@
 
   let { logs = [] }: { logs: ShipLog[] } = $props();
 
-  // Merged PRs in reverse chronological order — a timeline of shipped work,
+  // Merged PRs in reverse chronological order, a timeline of shipped work,
   // not a list of responsibilities.
   const timeline = $derived(
     [...logs].sort((a, b) => Date.parse(b.merged_at) - Date.parse(a.merged_at))
@@ -27,7 +27,7 @@
             rel="noreferrer noopener"
             class="text-accent">#{log.pr}</a
           >
-          {#if log.title}<span> — {log.title}</span>{/if}
+          {#if log.title}<span>: {log.title}</span>{/if}
         </p>
         <p class="text-xs text-muted">merged {relativeTime(log.merged_at)}</p>
       </li>

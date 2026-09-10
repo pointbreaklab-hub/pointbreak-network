@@ -30,7 +30,7 @@ export async function requestDeviceCode(): Promise<DeviceCode> {
 
 /**
  * Polls until the user authorizes or the code expires.
- * GitHub's `slow_down` means back off — ignoring it gets the app rate-limited.
+ * GitHub's `slow_down` means back off. Ignoring it gets the app rate-limited.
  */
 export async function pollForToken(
   device: DeviceCode,

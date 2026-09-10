@@ -21,7 +21,7 @@ better UI.
 A "Ghost Score" is not a badge we award. It is a function of published, signed
 facts: how long a posting has been open, how many applications it received, how
 many moved to a next stage, how many closed with a hire. If a company will not
-publish the inputs, it does not get a score — it gets an absence, and absence is
+publish the inputs, it does not get a score, it gets an absence, and absence is
 itself information.
 
 **2. The data outlives the platform.**
@@ -42,7 +42,7 @@ cannot live in a browser. It stores nothing.
 ## What follows from this
 
 - **Transparency is priced, not begged for.** Posting a job is paid. Publishing
-  your funnel numbers is what the payment buys — visibility ranks on disclosure.
+  your funnel numbers is what the payment buys. Visibility ranks on disclosure.
 - **Silence is measured.** The Black Hole Tracker records what companies do not
   do. A non-response is a data point with a timestamp.
 - **Receipts, not trust.** Payments and outcomes produce Ed25519-signed receipts
@@ -53,7 +53,7 @@ cannot live in a browser. It stores nothing.
 ## What this is not
 
 Not a network with an engagement feed. Not a recruiter tool with a candidate
-funnel. Not a place where paying more buys a better score — paying buys the
+funnel. Not a place where paying more buys a better score. Paying buys the
 right to be measured.
 
 We are not asking anyone to trust us. We are asking them to check the math.

@@ -34,8 +34,8 @@
 
 <h1 class="text-xl font-medium">Post a job</h1>
 <p class="mt-2 max-w-2xl text-muted">
-  One flat fee, the same for everyone. An exact salary is required, and your action metrics —
-  applications, interviews, rejections — are published with the posting. Those numbers are what your
+  One flat fee, the same for everyone. An exact salary is required, and your action metrics
+  (applications, interviews, rejections) are published with the posting. Those numbers are what your
   Ghost Score is computed from.
 </p>
 
@@ -51,7 +51,7 @@
   </label>
 
   <fieldset class="grid gap-1">
-    <legend class="text-sm text-muted">Salary — exact, not a range you'd negotiate down from</legend>
+    <legend class="text-sm text-muted">Salary: exact, not a range you'd negotiate down from</legend>
     <div class="grid grid-cols-[1fr_1fr_7rem_7rem] gap-2">
       <input class={field} type="number" bind:value={salary.min} placeholder="min" required />
       <input class={field} type="number" bind:value={salary.max} placeholder="max" required />
@@ -69,7 +69,7 @@
     {#if salary.min > 0 && !salaryOk}
       <p class="text-sm text-danger">
         That band is wider than {MAX_SALARY_SPREAD * 100}% of its midpoint. Bands this wide are a
-        negotiating position, not information — narrow it or post the exact figure.
+        negotiating position, not information. Narrow it or post the exact figure.
       </p>
     {:else if salaryOk}
       <p class="tabular text-sm text-ok">{formatSalary(salary)}</p>

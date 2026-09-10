@@ -106,7 +106,7 @@ export async function loadProfile(login: string): Promise<UserProfile> {
   // Forks and archives are someone else's work, or work that stopped.
   const repos = allRepos.filter((r) => !r.fork && !r.archived).slice(0, MAX_REPOS);
 
-  // Run in parallel — skills are ~25 requests, ship logs is 1 on a separate
+  // Run in parallel. Skills are ~25 requests, ship logs is 1 on a separate
   // (much tighter) search quota, so serialising them buys nothing.
   const [verified_skills, ship_logs] = await Promise.all([
     verifiedSkills(repos, login),

@@ -32,7 +32,7 @@ export async function listDir(path: string): Promise<Array<{ name: string; path:
 
 /**
  * `sha` is required when replacing an existing file. Omitting it on an update
- * is how you get a 409 — pass the sha from the read that produced your edit.
+ * is how you get a 409. Pass the sha from the read that produced your edit.
  */
 export async function writeJSON(
   path: string,

@@ -93,7 +93,7 @@
   <section>
     <h2 class="mb-1 text-base font-medium">Ship logs</h2>
     <p class="mb-3 text-sm text-muted">
-      Merged pull requests — work someone else reviewed and accepted.
+      Merged pull requests, work someone else reviewed and accepted.
     </p>
     <ShipLogList logs={profile.ship_logs} />
   </section>

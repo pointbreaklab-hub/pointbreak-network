@@ -10,7 +10,7 @@ export interface Session {
 
 /**
  * Reactive session state. Persisted in localStorage because there is no server
- * to hold one — sign-out is a local delete, and the token is the user's own.
+ * to hold one. Sign-out is a local delete, and the token is the user's own.
  */
 class SessionStore {
   current = $state<Session | null>(null);
