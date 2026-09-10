@@ -112,6 +112,14 @@ cache, and the full math engine. Phases 3 and 4 are UI components without their
 data wiring. See [docs/ROADMAP.md](docs/ROADMAP.md) for the checklist and the
 open questions.
 
+## Credits
+
+Built by [@roshangupta00750](https://github.com/roshangupta00750).
+
+Much of the implementation was written with Claude Opus 5 (Anthropic), working
+under direction and review. Architecture, product decisions, and every merge
+are the author's.
+
 ## License
 
 [GNU AGPL-3.0-or-later](LICENSE).
