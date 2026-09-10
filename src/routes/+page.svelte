@@ -48,7 +48,7 @@
       Launch App
     </a>
     <a
-      href="/post-job"
+      href="/app/post-job"
       class="rounded-lg border border-edge px-5 py-2.5 font-medium hover:bg-elevated"
     >
       Post a job

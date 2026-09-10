@@ -2,6 +2,7 @@
   "name": "pointbreak-network",
   "version": "0.1.0",
   "description": "A serverless, Git-backed job network. Math over emotion.",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

@@ -114,4 +114,10 @@ open questions.
 
 ## License
 
-Not yet chosen — see [docs/ROADMAP.md](docs/ROADMAP.md#open-questions).
+[GNU AGPL-3.0-or-later](LICENSE).
+
+Chosen deliberately. The manifesto's claim is that the scoring algorithm must
+stay readable; the AGPL is what makes that binding rather than aspirational.
+Anyone who runs a modified version of this as a network service has to publish
+their changes, so a fork cannot quietly alter the Ghost Score and keep the
+weights private.

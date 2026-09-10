@@ -101,12 +101,10 @@ Decisions the plan leaves ambiguous. Resolve before Phase 6.2.
    non-JS crawlers, link previews, and LLM scrapers read nothing from it.
    Revisit if organic discovery matters later — prerendering only `/` would fix
    it without introducing a server.
-3. **Data schemas.** Only `user.json` was specified. `job.json`,
-   `application.json`, and `receipt.json` in `src/lib/types.ts` are inferred and
-   need confirmation.
-4. **Deploy mechanism.** §6.1 says push `build/` to a `gh-pages` branch; the
-   workflow uses the current `actions/deploy-pages` artifact flow instead.
+3. ~~**Data schemas.**~~ **Resolved:** the inferred `job.json`, application
+   event, and `receipt.json` shapes in `src/lib/types.ts` are approved.
+4. ~~**Deploy mechanism.**~~ **Resolved:** `actions/deploy-pages` artifact flow.
 5. **Badge thresholds.** 🟢/🟡/🔴 cutoffs weren't given. Currently
    `<30 / 30–59 / ≥60`.
-6. **`post-job` route.** The directory tree puts it at `/post-job`; §4.1 puts it
-   at `/app/post-job`. Currently at `/post-job`.
+6. **`post-job` route.** The directory tree puts it at `/app/post-job`; §4.1 puts it
+   at `/app/app/post-job`. Currently at `/app/post-job`.

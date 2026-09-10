@@ -1,8 +1,8 @@
 User-agent: *
-Allow: /$
-Allow: /post-job
 
-# The authenticated app is a client-rendered shell — nothing to index.
+# The whole /app subtree is behind the auth guard and renders client-side.
+# There is nothing there for a crawler to read.
 Disallow: /app/
 
-Sitemap: https://pointbreaklab.com/sitemap.xml
+# The landing page at / is the only public surface.
+Allow: /$
