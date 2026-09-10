@@ -1,32 +1,18 @@
-import { projectAll } from '$core/math-engine';
-import type { Application } from '$lib/types';
-import { ME, MOCK_EVENTS, MOCK_TITLES } from './mock-events';
+import { MOCK_EVENTS, MOCK_TITLES, MY_REFS } from '$lib/fixtures';
+import type { LedgerEvent } from '$lib/types';
 
 export interface TrackerData {
-  /** The signed-in user's own applications. */
-  mine: Application[];
-  /** Everyone's, which is what the Squad count is computed across. */
-  all: Application[];
+  /** Raw ledger. Projection happens in the view so local appends are live. */
+  events: LedgerEvent[];
+  /** Refs this browser minted. The ledger itself carries no identity. */
+  myRefs: string[];
   titles: Record<string, string>;
 }
 
 /**
- * Reads the Event Ledger and projects it.
- *
- * TODO: replace the fixture with a read of events/<job_id>.jsonl from the data
- * repo. The projection and everything downstream stays as is, since the ledger
- * shape is the contract.
+ * TODO: replace with a read of events/<job_id>.jsonl from the data repo, and
+ * read myRefs from db.myApplications instead of a fixture constant.
  */
-export async function loadTracker(login: string): Promise<TrackerData> {
-  const events = MOCK_EVENTS.map((e) =>
-    e.github_login === ME ? { ...e, github_login: login } : e
-  );
-
-  const all = projectAll(events);
-
-  return {
-    mine: all.filter((a) => a.github_login === login),
-    all,
-    titles: MOCK_TITLES
-  };
+export async function loadTracker(_login: string): Promise<TrackerData> {
+  return { events: [...MOCK_EVENTS], myRefs: [...MY_REFS], titles: { ...MOCK_TITLES } };
 }

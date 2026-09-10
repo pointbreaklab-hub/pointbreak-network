@@ -82,7 +82,7 @@ export function findReposts(
       job_id: job.id,
       title: job.title,
       posted_at: job.posted_at,
-      similarity: Number(jaccard(incoming, tokenize(job.description)).toFixed(3))
+      similarity: Number(jaccard(incoming, tokenize(job.description ?? '')).toFixed(3))
     }))
     .filter((match) => match.similarity >= threshold)
     .sort((a, b) => b.similarity - a.similarity);

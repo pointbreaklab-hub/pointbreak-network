@@ -1,32 +1,30 @@
 <script lang="ts">
-  import { scoreJob } from '$core/math-engine';
-  import type { Job } from '$lib/types';
-  import { loadJobs } from '../data';
+  import { loadScoredJobs, type ScoredJob } from '../data';
   import JobFeed from './JobFeed.svelte';
   import JobFilters from './JobFilters.svelte';
 
-  let jobs = $state<Job[]>([]);
+  let jobs = $state<ScoredJob[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
   let stack = $state<string[]>([]);
   let minSalary = $state(0);
   let hideGhosts = $state(false);
+  let disclosedOnly = $state(false);
 
   $effect(() => {
-    loadJobs()
+    loadScoredJobs()
       .then((result) => (jobs = result))
-      .catch((e) => (error = e instanceof Error ? e.message : 'Could not load postings.'))
+      .catch((e: unknown) => (error = e instanceof Error ? e.message : 'Could not load postings.'))
       .finally(() => (loading = false));
   });
 
-  // Filtering by salary uses the floor, not the midpoint: a posting only counts
-  // as clearing your bar if its worst case does.
   const visible = $derived(
-    jobs.filter((job) => {
-      if (job.salary.min < minSalary) return false;
+    jobs.filter(({ job, score }) => {
+      if (disclosedOnly && !job.salary_disclosed) return false;
+      if (minSalary > 0 && (!job.salary || job.salary.min < minSalary)) return false;
       if (stack.length && !stack.every((t) => job.tech_stack.includes(t))) return false;
-      if (hideGhosts && scoreJob(job).band === 'ghost') return false;
+      if (hideGhosts && score.band === 'ghost') return false;
       return true;
     })
   );
@@ -35,15 +33,16 @@
 </script>
 
 <h1 class="text-lg font-medium">Jobs</h1>
-<p class="mt-1 mb-5 text-sm text-muted">
-  Ranked by Ghost Score, lowest first. Companies that act on applicants rank above ones that
-  don't, and no amount of money changes that order.
+<p class="mt-1 mb-5 max-w-3xl text-sm text-muted">
+  Ranked by Ghost Score, lowest first. Scores are computed from what candidates report, not from
+  what companies claim, so a posting can be measured whether or not the company has ever heard of
+  us.
 </p>
 
-<JobFilters bind:stack bind:minSalary bind:hideGhosts />
+<JobFilters bind:stack bind:minSalary bind:hideGhosts bind:disclosedOnly />
 
 {#if loading}
-  <p class="text-muted">Loading postings…</p>
+  <p class="text-muted">Loading postings...</p>
 {:else if error}
   <p class="rounded-md border border-danger p-3 text-sm text-danger">{error}</p>
 {:else}

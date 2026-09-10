@@ -50,8 +50,8 @@ These are binding. A change that violates one is a bug, not a trade-off.
 ## Phase 3: Candidate experience
 
 - [x] **3.1** Ship Logs profile: repos, commit history, verified skills, merged-PR timeline
-- [x] **3.2** Job board: exact salaries, tech stacks, transparency badges (fixture-backed)
-- [x] **3.3** Black Hole Tracker: application states, 14-day flag, Black Hole Squad count (fixture-backed)
+- [x] **3.2** Job board: salaries, tech stacks, transparency badges, external postings (fixture-backed)
+- [x] **3.3** Black Hole Tracker: states, 14-day flag, Squad count, claim attestation, external logging (fixture-backed)
 - [ ] **3.4** Async encrypted messaging: requests, polling, no WebSockets
 
 ## Phase 4: Company experience
@@ -98,11 +98,15 @@ Implemented verbatim in `src/core/math-engine/ghost-score.ts`. Clamped to 0–10
   commit path.
 - **Phase 4** Payment handshake and company dashboard wiring. Components render
   from props only.
-- **Zero-trust reporting** (PRD section 6). The Event Ledger it audits exists
-  and is append only, but there is no report submission, no audit routine, and
-  no dismissal path.
-- **Apply flow.** A candidate cannot yet apply to a job, so no ledger entry is
-  ever written from the UI.
+- **Zero-trust reporting** (PRD section 6). The ledger it audits exists, is
+  append only, and claim disputes are implemented. Still missing: report
+  submission, the audit routine, and the dismissal path.
+- **Sybil resistance.** Distinct application refs are assumed to be distinct
+  people. Squad counts are a floor, not a proof. No mitigation yet.
+- **Private ref backup.** Application refs live only in IndexedDB. Clearing
+  site data loses tracker history. Needs an opt-in private repo backup.
+- **Ledger writes.** Attestation and external logging append locally and are
+  not yet committed to the data repo.
 - **Data repo.** `pointbreaklab-hub/pointbreak-data` does not exist. Job board
   and tracker read fixtures behind an async seam; profile reads live GitHub.
 

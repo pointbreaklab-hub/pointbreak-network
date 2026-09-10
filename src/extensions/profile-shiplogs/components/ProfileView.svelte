@@ -5,6 +5,7 @@
   import type { UserProfile } from '$lib/types';
   import { relativeTime } from '$lib/utils';
   import { loadProfile } from '../data';
+  import ContributionVolumeCard from './ContributionVolume.svelte';
   import ShipLogList from './ShipLogList.svelte';
   import SkillMatrix from './SkillMatrix.svelte';
 
@@ -83,11 +84,16 @@
   <p class="text-muted">Reading your repositories and merged pull requests…</p>
 {:else if profile}
   <section class="mb-8">
-    <h2 class="mb-1 text-base font-medium">Verified skills</h2>
+    <ContributionVolumeCard volume={profile.contributions} />
+  </section>
+
+  <section class="mb-8">
+    <h2 class="mb-1 text-base font-medium">Skills</h2>
     <p class="mb-3 text-sm text-muted">
-      Commits you authored, grouped by each repository's primary language.
+      Each claim shows what backs it. Public commits are the weakest evidence here and a peer
+      vouching is the strongest, because a named engineer staked their account on it.
     </p>
-    <SkillMatrix skills={profile.verified_skills} />
+    <SkillMatrix skills={profile.skills} />
   </section>
 
   <section>

@@ -60,34 +60,34 @@ self-assessment field, and there is no endorsement field.
   "id": "job_01J8X…",
   "company_id": "acme-corp",
   "title": "Backend Engineer",
-  "salary": {
-    "min": 90000,
-    "max": 105000,
-    "currency": "EUR",
-    "period": "year"
-  },
-  "tech_stack": ["go", "postgres", "kubernetes"],
+  "source": "external",               // pointbreak | external
+  "source_url": "https://linkedin.com/jobs/view/4023998812",
+  "source_hash": "sha256:c4f1a09b…",  // normalized URL, used to dedupe
+  "salary": { "min": 90000, "max": 105000, "currency": "EUR", "period": "year" },
+  "salary_disclosed": true,
+  "tech_stack": ["go", "postgres"],
   "description": "…markdown…",
   "description_hash": "sha256:9f2c…",
   "posted_at": "2026-09-10T08:00:00Z",
-  "status": "open",                    // open | closed
-  "closed_at": null,
-  "close_reason": null,                // external_hire | internal_hire | cancelled
-  "metrics": {
-    "applications": 148,
-    "views": 1902,
-    "interviews_scheduled": 6,
-    "rejections_sent": 40,
-    "reposts": 1
-  },
+  "first_seen_at": "2026-09-10T08:00:00Z",
+  "status": "open",
+  "close_reason": null,               // external_hire | internal_hire | cancelled
   "receipt_id": "rcp_01J8X…"
 }
 ```
 
-**Exact salary is mandatory.** A band wider than 25% of its own midpoint is
-rejected at submit. See `isExactSalary()` in
-[`src/lib/utils.ts`](../src/lib/utils.ts). `metrics` is the sole input to the
-Ghost Score, which is why it is part of the posting rather than private.
+**There is no `metrics` field, deliberately.** Every number feeding a Ghost
+Score is derived from the ledger by `deriveMetrics()`. A company writing its own
+metrics into its own file was the largest hole in the original design.
+
+`source: "external"` means a candidate logged this from elsewhere and the
+company has no account. Those postings are scored anyway. `source_hash` is a
+hash of the normalized URL so the same job logged by many candidates collapses
+into one record.
+
+`salary_disclosed` is separate from `salary` because absence of disclosure is
+itself information. Exact salary is mandatory for `source: "pointbreak"` and
+merely recorded for external postings.
 
 ## Event Ledger
 
@@ -96,19 +96,47 @@ lines are never edited or deleted.
 
 ```jsonc
 {
+  "id": "ev_0007",
   "job_id": "job_01J8X…",
-  "github_login": "dev_user",
-  "action": "resume_viewed",  // application_submitted | resume_viewed
-                              // interview_scheduled  | rejection_sent
+  "application_ref": "app_9f2c4b17e3a85d0c6f1b2e7a4d8c3059",
+  "action": "resume_viewed",
   "at": "2026-08-03T11:20:00Z",
-  "actor": "company"          // candidate | company
+  "actor": "company",
+  "ref_event": null                   // set on claim_confirmed / claim_disputed
 }
 ```
 
-This is the source of truth for everything about a candidate/job relationship.
-It is append only because zero-trust reporting audits it: a report is dismissed
-when the ledger shows the company was in fact interviewing and rejecting, which
-only works if the history cannot be rewritten after the fact.
+### Actions
+
+| Action | Actor | Counts |
+|---|---|---|
+| `application_submitted` | candidate | immediately |
+| `rejection_received` | candidate | immediately |
+| `interview_held` | candidate | immediately |
+| `offer_received` | candidate | immediately |
+| `withdrawn` | candidate | immediately |
+| `resume_viewed` | company | only once confirmed |
+| `rejection_sent` | company | only once confirmed |
+| `interview_scheduled` | company | only once confirmed |
+| `claim_confirmed` | candidate | attests a claim, via `ref_event` |
+| `claim_disputed` | candidate | rejects a claim, via `ref_event` |
+
+Candidate-authored events count on sight: nobody invents a rejection they did
+not receive. Company claims are worth nothing until the candidate they name
+confirms them, and an unconfirmed claim **does not reset the Black Hole clock**.
+A dispute always beats a confirmation on the same event.
+
+### `application_ref`
+
+128 random bits minted in the browser, never derived from a GitHub login. The
+public ledger therefore contains no candidate identity, and the mapping back to
+a person lives only in that person's IndexedDB.
+
+A hash of the login would not be enough: logins are enumerable, so anyone could
+compute the hash for one person and test whether they applied somewhere.
+
+The cost is sybil resistance. Distinct refs are assumed to be distinct people,
+which makes Squad counts a floor rather than a proof.
 
 ## Application Record
 
@@ -119,10 +147,11 @@ stored.
 ```jsonc
 {
   "job_id": "job_01J8X…",
-  "github_login": "dev_user",
-  "status": "viewed",                  // submitted | viewed | interviewing | rejected
+  "application_ref": "app_9f2c4b17e3a85d0c6f1b2e7a4d8c3059",
+  "status": "viewed",   // submitted | viewed | interviewing | rejected | offer | withdrawn
   "submitted_at": "2026-08-01T09:00:00Z",
-  "last_action_at": "2026-08-03T11:20:00Z"
+  "last_action_at": "2026-08-03T11:20:00Z",
+  "pending_claims": []  // company claims awaiting this candidate's attestation
 }
 ```
 
@@ -165,24 +194,36 @@ inputs but cannot forge the output.
 ```jsonc
 {
   "job_id": "job_01J8X…",
-  "score": 45,                         // 0–100, higher is worse
-  "band": "evergreen",                 // active | evergreen | ghost
+  "score": 85,                         // 0-100, higher is worse
+  "band": "ghost",                     // active | evergreen | ghost
+  "sample": 24,                        // tracked applications behind the score
   "breakdown": [
-    { "id": "stale_no_engagement", "label": "…", "points": 20, "applied": true },
-    { "id": "interviews_held",     "label": "…", "points": -30, "applied": true }
+    { "id": "stale_no_engagement", "label": "…", "points": 20, "applied": true }
   ]
 }
 ```
 
-| Δ | Rule id | Condition |
+| Delta | Rule id | Condition |
 |---|---|---|
-| +20 | `stale_no_engagement` | Open > 30 days, 0 interviews, 0 rejections |
-| +30 | `serial_repost` | Identical description reposted more than twice |
-| +20 | `volume_no_interviews` | More than 100 applications, 0 interviews |
-| −5 | `interviews_held` | Per interview scheduled |
-| −1 | `rejections_sent` | Per rejection sent |
+| +20 | `stale_no_engagement` | Open > 30 days, nothing confirmed by any candidate |
+| +30 | `serial_repost` | Same `description_hash` on more than 2 other postings |
+| +20 | `total_silence` | 5 or more applicants, none reporting any response |
+| +20 | `volume_no_interviews` | More than 100 applications, no confirmed interviews |
+| +15 | `inflated_claims` | 3 or more disputes, and over 20% of claims disputed |
+| -5 | `interviews_held` | Per interview a candidate confirmed |
+| -1 | `rejections_sent` | Per rejection a candidate confirmed |
 
-Bands: 🟢 Active `<30` · 🟡 Evergreen `30–59` · 🔴 Ghost `≥60`.
+Bands: Active `<30`, Evergreen `30-59`, Ghost `>=60`.
+
+`total_silence` exists because externally sourced jobs are only visible through
+the candidates who logged them here, so absolute volume thresholds rarely fire.
+Twenty people all ignored is damning even though twenty is not many.
+
+`sample` is surfaced in the UI rather than hidden, so a score built on three
+reports is not presented as if it were built on three hundred.
+
+`inflated_claims` needs both thresholds. One angry candidate disputing one
+rejection must not be able to move a company's score.
 
 ### Black Hole: `src/core/math-engine/black-hole.ts`
 

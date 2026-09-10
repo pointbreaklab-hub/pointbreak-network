@@ -88,6 +88,34 @@ export async function ghFetch<T>(path: string, init: RequestInit = {}): Promise<
 }
 
 /**
+ * GraphQL, needed for the few things REST does not expose. Private contribution
+ * totals are the important one: they let an engineer whose work is all in
+ * private repos prove volume without revealing a single repository name.
+ */
+export async function ghGraphQL<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
+  const token = session.current?.token;
+  if (!token) throw new AuthError('GraphQL requires a signed-in session.');
+
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ query, variables })
+  });
+
+  if (res.status === 401) {
+    session.signOut();
+    throw new AuthError();
+  }
+  if (!res.ok) throw new GitHubError(await errorMessage(res), res.status);
+
+  const body = (await res.json()) as { data?: T; errors?: Array<{ message: string }> };
+  if (body.errors?.length) throw new GitHubError(body.errors[0].message, 200);
+  if (!body.data) throw new GitHubError('empty GraphQL response', 200);
+
+  return body.data;
+}
+
+/**
  * GitHub reports failures as {"message": "...", "documentation_url": "..."}.
  * Surfacing the whole body puts raw JSON in front of the user.
  */

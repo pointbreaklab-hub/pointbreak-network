@@ -1,6 +1,7 @@
 export {
   ghFetch,
   ghFetchRaw,
+  ghGraphQL,
   countFromLinkHeader,
   GitHubError,
   RateLimitError,

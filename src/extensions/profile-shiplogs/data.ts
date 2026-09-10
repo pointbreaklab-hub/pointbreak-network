@@ -1,14 +1,31 @@
 /**
- * Builds a UserProfile from the authenticated user's real GitHub activity.
+ * Builds a UserProfile from the signed-in user's real GitHub activity.
  *
- * Nothing here is self-reported. Skills come from commit counts, ship logs come
- * from merged pull requests. If GitHub doesn't corroborate it, it isn't shown.
+ * Public commit volume alone is a bad proxy for skill. Most professional
+ * engineering happens in private repositories, so an engineer with fifteen
+ * years at a bank has a nearly empty public profile while someone with forty
+ * tutorial repositories looks prolific. Ranking on public commits would bury
+ * exactly the people this product is for.
+ *
+ * So a skill can be evidenced four ways, and the UI shows which one backs each
+ * claim rather than collapsing them into a single number:
+ *
+ *   public_commits        commits in public repos, by primary language
+ *   merged_prs            pull requests someone else reviewed and merged
+ *   private_contributions aggregate volume of private work, no repo names
+ *   peer_attestation      another engineer vouching, signed by their account
  */
 
-import { AuthError, countFromLinkHeader, ghFetch, ghFetchRaw, RateLimitError } from '$core/github-api';
-import type { ShipLog, UserProfile, VerifiedSkill } from '$lib/types';
+import {
+  AuthError,
+  countFromLinkHeader,
+  ghFetch,
+  ghFetchRaw,
+  ghGraphQL,
+  RateLimitError
+} from '$core/github-api';
+import type { ContributionVolume, ShipLog, Skill, SkillEvidence, UserProfile } from '$lib/types';
 
-/** Bounds the request count: one call per repo, so this is the API budget. */
 const MAX_REPOS = 25;
 const MAX_SHIP_LOGS = 50;
 
@@ -33,9 +50,9 @@ interface GhSearchItem {
 /**
  * Commits authored by `login` in one repo.
  *
- * GitHub has no count endpoint. Asking for a single item per page and reading
- * the `rel="last"` page number off the Link header is the documented trick, and
- * costs one request instead of paging the whole history.
+ * GitHub has no count endpoint. Requesting one item per page and reading the
+ * rel="last" page number off the Link header is the documented approach, and
+ * costs one request rather than paging the whole history.
  */
 async function commitCount(fullName: string, login: string): Promise<number> {
   try {
@@ -48,20 +65,69 @@ async function commitCount(fullName: string, login: string): Promise<number> {
     // here would silently render an empty skill list instead of an error.
     if (e instanceof AuthError || e instanceof RateLimitError) throw e;
 
-    // Empty repos 409 and private ones 404. Neither is worth failing over.
+    // Empty repos 409 and inaccessible ones 404. Neither is worth failing over.
     return 0;
   }
 }
 
 /**
- * Commits are attributed to the repository's primary language.
+ * Aggregate contribution volume including private work.
  *
- * Attributing per-file would need the language breakdown *and* a diff for every
- * commit, which is far outside the rate limit. The claim this makes is
- * therefore "commits in repos whose primary language is X", which is what the
- * UI says.
+ * `restrictedContributionsCount` is GitHub's count of contributions in repos
+ * the viewer cannot see. It proves the work happened without naming a single
+ * repository, which is the whole point: it is the only way a senior engineer
+ * behind a corporate firewall can evidence output here.
+ *
+ * It is zero unless the user has enabled private contributions on their
+ * profile, so an empty result means "not shared", not "did nothing".
  */
-async function verifiedSkills(repos: GhRepo[], login: string): Promise<VerifiedSkill[]> {
+async function contributionVolume(login: string): Promise<ContributionVolume | undefined> {
+  try {
+    const data = await ghGraphQL<{
+      user: {
+        contributionsCollection: {
+          startedAt: string;
+          endedAt: string;
+          totalCommitContributions: number;
+          restrictedContributionsCount: number;
+        };
+      } | null;
+    }>(
+      `query($login: String!) {
+        user(login: $login) {
+          contributionsCollection {
+            startedAt
+            endedAt
+            totalCommitContributions
+            restrictedContributionsCount
+          }
+        }
+      }`,
+      { login }
+    );
+
+    const c = data.user?.contributionsCollection;
+    if (!c) return undefined;
+
+    return {
+      total: c.totalCommitContributions + c.restrictedContributionsCount,
+      restricted: c.restrictedContributionsCount,
+      from: c.startedAt,
+      to: c.endedAt
+    };
+  } catch (e) {
+    if (e instanceof AuthError || e instanceof RateLimitError) throw e;
+    return undefined;
+  }
+}
+
+/**
+ * Commits are attributed to each repository's primary language. Per-file
+ * attribution would need a language breakdown and a diff for every commit,
+ * which is far outside the rate limit, so the UI states the weaker claim this
+ * actually supports: commits in repos whose primary language is X.
+ */
+async function skillsFromRepos(repos: GhRepo[], login: string): Promise<Map<string, number>> {
   const withLanguage = repos.filter((r) => r.language);
 
   const counted = await Promise.all(
@@ -77,9 +143,7 @@ async function verifiedSkills(repos: GhRepo[], login: string): Promise<VerifiedS
     totals.set(skill, (totals.get(skill) ?? 0) + commits);
   }
 
-  return [...totals]
-    .map(([skill, commits]) => ({ skill, commits }))
-    .sort((a, b) => b.commits - a.commits);
+  return totals;
 }
 
 /** Merged PRs, newest first. A merged PR is work someone else accepted. */
@@ -103,20 +167,51 @@ export async function loadProfile(login: string): Promise<UserProfile> {
     `/users/${encodeURIComponent(login)}/repos?type=owner&sort=pushed&per_page=100`
   );
 
-  // Forks and archives are someone else's work, or work that stopped.
+  // Forks are someone else's work; archives are work that stopped.
   const repos = allRepos.filter((r) => !r.fork && !r.archived).slice(0, MAX_REPOS);
 
-  // Run in parallel. Skills are ~25 requests, ship logs is 1 on a separate
-  // (much tighter) search quota, so serialising them buys nothing.
-  const [verified_skills, ship_logs] = await Promise.all([
-    verifiedSkills(repos, login),
-    shipLogs(login)
+  const [publicCommits, ship_logs, contributions] = await Promise.all([
+    skillsFromRepos(repos, login),
+    shipLogs(login),
+    contributionVolume(login)
   ]);
+
+  const now = new Date().toISOString();
+  const skills: Skill[] = [];
+
+  for (const [skill, count] of publicCommits) {
+    const evidence: SkillEvidence[] = [{ kind: 'public_commits', count, at: now }];
+
+    const merged = ship_logs.filter((log) => log.title?.toLowerCase().includes(skill.toLowerCase()));
+    if (merged.length) evidence.push({ kind: 'merged_prs', count: merged.length, at: now });
+
+    skills.push({ skill, evidence });
+  }
+
+  skills.sort((a, b) => evidenceWeight(b) - evidenceWeight(a));
 
   return {
     github_login: login,
-    verified_skills,
+    skills,
     ship_logs,
-    updated_at: new Date().toISOString()
+    contributions,
+    updated_at: now
   };
+}
+
+/**
+ * Ordering only, never displayed as a score. A merged PR is worth more than a
+ * commit because someone else reviewed it, and a peer attestation is worth more
+ * still because a named person staked their account on it.
+ */
+export function evidenceWeight(skill: Skill): number {
+  const WEIGHT: Record<SkillEvidence['kind'], number> = {
+    public_commits: 1,
+    merged_prs: 5,
+    private_contributions: 1,
+    peer_attestation: 50,
+    external_artifact: 10
+  };
+
+  return skill.evidence.reduce((sum, e) => sum + WEIGHT[e.kind] * (e.count ?? 1), 0);
 }

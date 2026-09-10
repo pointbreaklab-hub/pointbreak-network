@@ -2,7 +2,8 @@
   let {
     stack = $bindable<string[]>([]),
     minSalary = $bindable(0),
-    hideGhosts = $bindable(true)
+    hideGhosts = $bindable(true),
+    disclosedOnly = $bindable(false)
   } = $props();
 
   const field = 'rounded-md border border-edge bg-elevated px-2 py-1.5 text-fg';
@@ -30,6 +31,11 @@
 
   <label class="flex items-center gap-2 text-sm text-muted">
     <input type="checkbox" bind:checked={hideGhosts} />
-    Hide 🔴 ghost jobs
+    Hide ghost jobs
+  </label>
+
+  <label class="flex items-center gap-2 text-sm text-muted">
+    <input type="checkbox" bind:checked={disclosedOnly} />
+    Salary disclosed only
   </label>
 </form>

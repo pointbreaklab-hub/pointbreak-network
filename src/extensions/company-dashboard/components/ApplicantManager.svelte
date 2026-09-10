@@ -1,12 +1,16 @@
 <script lang="ts">
   import { scoreJob } from '$core/math-engine';
-  import type { Application, CloseReason, Job } from '$lib/types';
+  import type { Application, CloseReason, Job, JobMetrics } from '$lib/types';
   import { relativeTime } from '$lib/utils';
   import GhostScoreMeter from './GhostScoreMeter.svelte';
 
-  let { job, applications = [] }: { job: Job; applications: Application[] } = $props();
+  let {
+    job,
+    metrics,
+    applications = []
+  }: { job: Job; metrics: JobMetrics; applications: Application[] } = $props();
 
-  const ghost = $derived(scoreJob(job));
+  const ghost = $derived(scoreJob(job, metrics));
 
   const CLOSE_REASONS: Array<{ value: CloseReason; label: string }> = [
     { value: 'external_hire', label: 'Hired externally' },
@@ -16,7 +20,8 @@
 
   let closeReason = $state<CloseReason | ''>('');
 
-  // TODO: writes a status transition to the data repo as a commit.
+  // TODO: appends a company claim to the ledger. It earns no credit until the
+  // candidate confirms it, which is the entire point of the design.
   function closeJob() {}
 </script>
 
@@ -24,19 +29,27 @@
   <div>
     <h1 class="text-lg font-medium">{job.title}</h1>
     <p class="tabular mt-1 mb-4 text-sm text-muted">
-      {applications.length} applicants · posted {relativeTime(job.posted_at)}
+      {applications.length} tracked applicants · posted {relativeTime(job.posted_at)}
+    </p>
+
+    <p class="mb-4 rounded-md border border-edge p-3 text-xs text-muted">
+      Applicants are pseudonymous here. You see that someone applied and what they confirmed, never
+      who they are, until they choose to open a thread with you.
     </p>
 
     <ul class="grid gap-1">
-      {#each applications as app (app.github_login)}
-        <li class="flex justify-between border-b border-edge py-2">
-          <span>{app.github_login}</span>
-          <span class="text-sm text-muted">
+      {#each applications as app (app.application_ref)}
+        <li class="flex justify-between border-b border-edge py-2 text-sm">
+          <span class="font-mono text-xs text-muted">{app.application_ref.slice(0, 12)}</span>
+          <span class="text-muted">
             {app.status} · {relativeTime(app.last_action_at)}
+            {#if app.pending_claims.length}
+              <span class="text-warn">· {app.pending_claims.length} unconfirmed</span>
+            {/if}
           </span>
         </li>
       {:else}
-        <li class="py-2 text-muted">No applicants yet.</li>
+        <li class="py-2 text-muted">No tracked applicants yet.</li>
       {/each}
     </ul>
 
@@ -44,7 +57,7 @@
       <label class="grid gap-1 text-sm text-muted">
         Close this posting
         <select bind:value={closeReason} class="rounded-md border border-edge bg-elevated px-2 py-1.5 text-fg">
-          <option value="">Select a reason…</option>
+          <option value="">Select a reason...</option>
           {#each CLOSE_REASONS as reason (reason.value)}
             <option value={reason.value}>{reason.label}</option>
           {/each}
@@ -61,5 +74,5 @@
     </div>
   </div>
 
-  <GhostScoreMeter {job} score={ghost} />
+  <GhostScoreMeter {job} {metrics} score={ghost} />
 </div>

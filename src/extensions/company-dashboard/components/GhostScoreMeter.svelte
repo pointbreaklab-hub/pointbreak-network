@@ -1,13 +1,13 @@
 <script lang="ts">
   import { actionNudges, BAND_LABELS, BANDS } from '$core/math-engine';
-  import type { GhostScore, Job } from '$lib/types';
+  import type { GhostScore, Job, JobMetrics } from '$lib/types';
 
-  let { job, score }: { job: Job; score: GhostScore } = $props();
+  let { job, metrics, score }: { job: Job; metrics: JobMetrics; score: GhostScore } = $props();
 
   const band = $derived(BAND_LABELS[score.band]);
   const tone = $derived({ active: 'text-ok', evergreen: 'text-warn', ghost: 'text-danger' }[score.band]);
   const fill = $derived({ active: 'bg-ok', evergreen: 'bg-warn', ghost: 'bg-danger' }[score.band]);
-  const nudges = $derived(actionNudges(job));
+  const nudges = $derived(actionNudges(job, metrics));
 </script>
 
 <section class="rounded-lg border border-edge p-4">
@@ -19,10 +19,10 @@
   <p class="tabular mt-1 text-4xl font-semibold {tone}">
     {score.score}<span class="text-lg text-muted">/100</span>
   </p>
+  <p class="tabular text-xs text-muted">from {score.sample} candidate reports</p>
 
   <div class="relative mt-3 h-2 rounded-full bg-elevated">
     <div class="h-full rounded-full {fill}" style:width="{score.score}%"></div>
-    <!-- Band boundaries, so a company can see how far it is from the next tier. -->
     <span class="absolute top-0 h-full w-px bg-bg/60" style:left="{BANDS.evergreen}%"></span>
     <span class="absolute top-0 h-full w-px bg-bg/60" style:left="{BANDS.ghost}%"></span>
   </div>

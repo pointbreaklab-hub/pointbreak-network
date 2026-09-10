@@ -33,6 +33,14 @@ Implementation status lives in [ROADMAP.md](ROADMAP.md). Schemas live in
    toggled without breaking the core app.
 6. **One external server.** A serverless Cloudflare Worker handles Stripe and
    PayPal micro-payments and returns cryptographically signed receipts.
+7. **Candidate-first measurement.** A job does not need a company account to be
+   measured. Candidates log postings from anywhere and the network scores them
+   from what candidates report.
+8. **Nothing self-reported counts.** Every input to a Ghost Score is derived
+   from the ledger, and a company claim is worth nothing until the candidate it
+   names confirms it.
+9. **No candidate identity in public data.** The ledger carries random
+   pseudonyms, never GitHub logins.
 
 ## 3. End-to-end user journeys
 
@@ -116,6 +124,71 @@ Implementation status lives in [ROADMAP.md](ROADMAP.md). Schemas live in
 - **Similarity detector.** Jaccard similarity, which ignores term frequency to
   prevent filler-word manipulation, against the company's last 50 postings.
 
+## 4a. Revisions after the first review
+
+Four flaws in the original design, and what replaced them. These override
+anything earlier in this document that contradicts them.
+
+### Self-reported metrics
+
+The Ghost Score originally read `metrics` from `job.json`, a file the company
+writes. A company wanting a clean score simply wrote clean numbers, so the
+honesty meter ran on self-reported honesty.
+
+`Job` no longer has a `metrics` field at all. Metrics are derived from the
+ledger by `deriveMetrics()`. Company-authored actions are **claims** that earn
+nothing until the affected candidate appends a `claim_confirmed` event.
+Candidate-authored events count immediately, because nobody invents a rejection
+they did not receive. A company caught claiming actions candidates dispute takes
+a penalty, gated behind three disputes and a twenty percent rate so a single
+spite dispute cannot move a score.
+
+Critically, an unconfirmed claim does not reset the Black Hole clock. Marking
+work as done is not the same as doing it.
+
+### Candidate privacy
+
+The ledger contained `github_login` in a public, append-only, permanent file.
+That published everyone's job search to their current employer.
+
+Applications are now referenced by `ApplicationRef`, 128 random bits minted in
+the browser. The mapping back to a person exists only in that person's own
+IndexedDB. A hash of the login would not do: logins are enumerable, so anyone
+could test whether a specific person applied somewhere.
+
+The tradeoff is sybil resistance. Distinct refs are assumed to be distinct
+people, so Squad counts are a floor rather than a proof. This is the right way
+round: overcounting silence is a smaller harm than exposing job seekers.
+
+### Company participation
+
+The original model needed companies to opt into being measured, which no
+recruiting team does. The pitch was "pay us to publish data that can damage
+you", so the only non-participants were the companies most worth measuring.
+
+Jobs now carry `source: 'pointbreak' | 'external'`. External jobs are logged by
+candidates from LinkedIn, Greenhouse, or any careers page, and are scored
+without the company's involvement. Postings dedupe on a normalized URL hash so
+the same job logged by many people aggregates into one record, and company
+identity resolves from the domain so `acme.com` and `careers.acme.com` are one
+company.
+
+A company's only levers are to behave better or to dispute the record with
+evidence, which is also the acquisition channel.
+
+### Skill evidence
+
+Ranking on public commit volume buries the people this product exists for. Most
+professional engineering happens in private repositories, so a senior engineer
+at a bank has an empty public profile while someone with forty tutorial
+repositories looks prolific.
+
+A skill now carries typed evidence: `public_commits`, `merged_prs`,
+`private_contributions`, `peer_attestation`, `external_artifact`. The UI shows
+which evidence backs each claim rather than collapsing them into one number.
+Private contribution totals come from GitHub's `restrictedContributionsCount`,
+which proves volume without naming a single repository.
+
 ## 5. Data flow and state management
 
 - **Source of truth.** GitHub repositories holding JSON/JSONL.
@@ -126,18 +199,22 @@ Implementation status lives in [ROADMAP.md](ROADMAP.md). Schemas live in
 Entities:
 
 - **User Profile.** GitHub login, verified skills array, ship logs.
-- **Job Post.** Title, exact salary, tech stack, description hash, payment
-  receipt signature, current status.
+- **Job Post.** Title, source, salary and whether it was disclosed at all, tech
+  stack, description hash, receipt, current status. No metrics: those are
+  derived.
 - **Event Ledger.** Append-only log of actions: application submitted, resume
   viewed, interview scheduled, rejection sent.
-- **Application Record.** The relationship and current state between one
-  candidate and one job post.
+- **Application Record.** Derived from the ledger, never stored. Keyed by a
+  pseudonymous application ref, not by a person.
 
 ## 6. Security, privacy and moderation
 
 - **Zero-trust reporting.** A user report never lowers a score by itself. It
   triggers an audit of the Event Ledger, and if the data shows the company was
   interviewing and rejecting, the report is dismissed.
+- **Pseudonymous applications.** Public data contains no GitHub login. See
+  section 4a.
+- **Attested actions only.** A company cannot credit itself. See section 4a.
 - **Client-side encryption.** Message contents are encrypted in the browser
   before being pushed. GitHub stores ciphertext only.
 - **No secrets in the frontend.** Payment keys and OAuth client secrets never
