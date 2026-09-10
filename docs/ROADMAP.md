@@ -64,7 +64,7 @@ These are binding. A change that violates one is a bug, not a trade-off.
 ## Phase 6 — Polish & deployment
 
 - [x] **6.1** GitHub Actions CI/CD
-- [ ] **6.2** Domain configuration (CNAME + DNS) — blocked, see open questions
+- [x] **6.2** Domain configuration — apex `pointbreaklab.com`, see [DEPLOYMENT.md](DEPLOYMENT.md)
 - [x] **6.3** PWA manifest + service worker
 
 ---
@@ -91,14 +91,16 @@ Implemented verbatim in `src/core/math-engine/ghost-score.ts`. Clamped to 0–10
 
 Decisions the plan leaves ambiguous. Resolve before Phase 6.2.
 
-1. **Domain split.** §1.3 puts the landing page on `pointbreaklab.com` and the
-   app on `app.pointbreaklab.com`; §6.2 puts `app.pointbreaklab.com` in this
-   repo's `CNAME`. One Pages site serves one hostname, so this is either two
-   deployments or one host. `static/CNAME` currently holds
-   `app.pointbreaklab.com` per §6.2.
-2. **Landing page indexability.** Rule 3 disables SSR globally, so the landing
-   page ships as an empty shell hydrated by JS. Crawlers that don't execute JS
-   see nothing. Prerendering just `/` would fix it without a server.
+1. ~~**Domain split.**~~ **Resolved:** one origin on the apex,
+   `pointbreaklab.com`. Landing at `/`, app at `/app/*`. Same-origin is required
+   because the session token, Dexie cache, and service worker are all
+   origin-scoped. `app.pointbreaklab.com` becomes a provider-level 301, not a
+   Pages hostname. See [DEPLOYMENT.md](DEPLOYMENT.md).
+2. ~~**Landing page indexability.**~~ **Resolved:** rule 3 stands, SSR stays off
+   everywhere. Accepted cost: the landing page is a JS-hydrated shell, so
+   non-JS crawlers, link previews, and LLM scrapers read nothing from it.
+   Revisit if organic discovery matters later — prerendering only `/` would fix
+   it without introducing a server.
 3. **Data schemas.** Only `user.json` was specified. `job.json`,
    `application.json`, and `receipt.json` in `src/lib/types.ts` are inferred and
    need confirmation.
