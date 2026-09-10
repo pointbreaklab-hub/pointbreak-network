@@ -5,11 +5,15 @@
 
   let {
     applications = [],
-    allApplications = applications
-  }: { applications: Application[]; allApplications?: Application[] } = $props();
+    allApplications = applications,
+    titles = {}
+  }: {
+    applications: Application[];
+    allApplications?: Application[];
+    titles?: Record<string, string>;
+  } = $props();
 
   const rows = $derived(detectAll(applications, allApplications));
-
   const byJob = $derived(new Map(applications.map((a) => [a.job_id, a])));
 
   const LABELS: Record<string, string> = {
@@ -17,37 +21,38 @@
     viewed: 'Viewed',
     interviewing: 'Interviewing',
     rejected: 'Rejected',
-    black_hole: 'Black hole'
+    black_hole: 'Black Hole'
   };
-</script>
 
-<p class="mb-4 text-sm text-muted">
-  An application goes dark after {BLACK_HOLE_AFTER_DAYS} days of company silence. Silence is
-  recorded, not forgiven.
-</p>
+  const th = 'border-b border-edge px-3 py-2 text-left font-medium';
+  const td = 'border-b border-edge px-3 py-2';
+</script>
 
 <table class="w-full border-collapse text-sm">
   <thead>
     <tr class="text-muted">
-      <th class="border-b border-edge px-3 py-2 text-left font-medium">Job</th>
-      <th class="border-b border-edge px-3 py-2 text-left font-medium">Applied</th>
-      <th class="border-b border-edge px-3 py-2 text-left font-medium">State</th>
-      <th class="border-b border-edge px-3 py-2 text-left font-medium">Silence</th>
-      <th class="border-b border-edge px-3 py-2 text-left font-medium">Squad</th>
+      <th class={th}>Job</th>
+      <th class={th}>Applied</th>
+      <th class={th}>State</th>
+      <th class={th}>Silence</th>
+      <th class={th}>Squad</th>
     </tr>
   </thead>
   <tbody>
     {#each rows as row (row.job_id)}
       <tr class:text-danger={row.is_black_hole}>
-        <td class="border-b border-edge px-3 py-2">{row.job_id}</td>
-        <td class="border-b border-edge px-3 py-2">
-          {relativeTime(byJob.get(row.job_id)?.submitted_at ?? new Date())}
+        <td class={td}>{titles[row.job_id] ?? row.job_id}</td>
+        <td class={td}>{relativeTime(byJob.get(row.job_id)?.submitted_at ?? new Date())}</td>
+        <td class={td}>{LABELS[row.state]}</td>
+        <td class="tabular {td}">
+          {row.days_silent}d
+          {#if row.is_black_hole}
+            <span class="text-xs opacity-70">(over {BLACK_HOLE_AFTER_DAYS})</span>
+          {/if}
         </td>
-        <td class="border-b border-edge px-3 py-2">{LABELS[row.state]}</td>
-        <td class="tabular border-b border-edge px-3 py-2">{row.days_silent}d</td>
-        <td class="tabular border-b border-edge px-3 py-2">
+        <td class="tabular {td}">
           <!-- You are not the only one being ignored. -->
-          {row.squad_size ? `${row.squad_size} stuck here` : '-'}
+          {row.squad_size && row.squad_size > 1 ? `${row.squad_size} stuck here` : '-'}
         </td>
       </tr>
     {:else}

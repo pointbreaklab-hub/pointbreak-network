@@ -11,6 +11,8 @@ export {
 
 export { detect, detectAll, squadSizes, BLACK_HOLE_AFTER_DAYS } from './black-hole';
 
+export { projectApplication, projectAll } from './ledger';
+
 export {
   findReposts,
   jaccard,

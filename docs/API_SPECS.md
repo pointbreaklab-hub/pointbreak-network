@@ -68,6 +68,7 @@ self-assessment field, and there is no endorsement field.
   },
   "tech_stack": ["go", "postgres", "kubernetes"],
   "description": "…markdown…",
+  "description_hash": "sha256:9f2c…",
   "posted_at": "2026-09-10T08:00:00Z",
   "status": "open",                    // open | closed
   "closed_at": null,
@@ -88,23 +89,48 @@ rejected at submit. See `isExactSalary()` in
 [`src/lib/utils.ts`](../src/lib/utils.ts). `metrics` is the sole input to the
 Ghost Score, which is why it is part of the posting rather than private.
 
-## `application` event
+## Event Ledger
 
-Appended to `events/<job_id>.jsonl`, one JSON object per line.
+Appended to `events/<job_id>.jsonl`, one JSON object per line. Append only:
+lines are never edited or deleted.
 
 ```jsonc
 {
   "job_id": "job_01J8X…",
   "github_login": "dev_user",
-  "status": "submitted",               // submitted | viewed | interviewing | rejected
+  "action": "resume_viewed",  // application_submitted | resume_viewed
+                              // interview_scheduled  | rejection_sent
+  "at": "2026-08-03T11:20:00Z",
+  "actor": "company"          // candidate | company
+}
+```
+
+This is the source of truth for everything about a candidate/job relationship.
+It is append only because zero-trust reporting audits it: a report is dismissed
+when the ledger shows the company was in fact interviewing and rejecting, which
+only works if the history cannot be rewritten after the fact.
+
+## Application Record
+
+Derived from the ledger by `projectAll()` in
+[`src/core/math-engine/ledger.ts`](../src/core/math-engine/ledger.ts), never
+stored.
+
+```jsonc
+{
+  "job_id": "job_01J8X…",
+  "github_login": "dev_user",
+  "status": "viewed",                  // submitted | viewed | interviewing | rejected
   "submitted_at": "2026-08-01T09:00:00Z",
   "last_action_at": "2026-08-03T11:20:00Z"
 }
 ```
 
-`last_action_at` is the last time the *company* did anything. The gap between it
-and now is the entire Black Hole signal, so it must never be touched by a
-candidate-side write.
+`status` is the highest stage reached, so a view logged after an interview is
+not a demotion. `last_action_at` is the timestamp of the most recent *company*
+action, and the gap between it and now is the entire Black Hole signal.
+Projecting rather than storing means a company cannot change what a candidate
+sees without appending an event that also moves its own Ghost Score.
 
 ## `receipt.json`
 

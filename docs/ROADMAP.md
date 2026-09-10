@@ -1,3 +1,8 @@
+# Roadmap
+
+Implementation status. The specification itself lives in [PRD.md](PRD.md), which
+wins wherever the two disagree.
+
 # Web MVP Master Plan
 
 ## Core philosophy
@@ -44,9 +49,9 @@ These are binding. A change that violates one is a bug, not a trade-off.
 
 ## Phase 3: Candidate experience
 
-- [ ] **3.1** Ship Logs profile: repos, commit history, verified skills, merged-PR timeline
-- [ ] **3.2** Job board: exact salaries, tech stacks, transparency badges
-- [ ] **3.3** Black Hole Tracker: application states, 14-day flag, Black Hole Squad count
+- [x] **3.1** Ship Logs profile: repos, commit history, verified skills, merged-PR timeline
+- [x] **3.2** Job board: exact salaries, tech stacks, transparency badges (fixture-backed)
+- [x] **3.3** Black Hole Tracker: application states, 14-day flag, Black Hole Squad count (fixture-backed)
 - [ ] **3.4** Async encrypted messaging: requests, polling, no WebSockets
 
 ## Phase 4: Company experience
@@ -86,6 +91,20 @@ Implemented verbatim in `src/core/math-engine/ghost-score.ts`. Clamped to 0–10
 `last_action_at` older than 14 days while status is `submitted` or `viewed`.
 
 ---
+
+## Not yet built
+
+- **3.4** Async encrypted inbox. UI renders; no key exchange, no polling, no
+  commit path.
+- **Phase 4** Payment handshake and company dashboard wiring. Components render
+  from props only.
+- **Zero-trust reporting** (PRD section 6). The Event Ledger it audits exists
+  and is append only, but there is no report submission, no audit routine, and
+  no dismissal path.
+- **Apply flow.** A candidate cannot yet apply to a job, so no ledger entry is
+  ever written from the UI.
+- **Data repo.** `pointbreaklab-hub/pointbreak-data` does not exist. Job board
+  and tracker read fixtures behind an async seam; profile reads live GitHub.
 
 ## Open questions
 

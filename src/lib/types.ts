@@ -65,6 +65,12 @@ export interface Job {
   salary: Salary;
   tech_stack: string[];
   description: string;
+  /**
+   * Hash of `description` at publish time. Lets a repost be detected without
+   * refetching the full text of every past posting, and makes an edited
+   * description visible as a change rather than a silent overwrite.
+   */
+  description_hash?: string;
   posted_at: ISODate;
   status: JobStatus;
   closed_at?: ISODate;
@@ -73,10 +79,37 @@ export interface Job {
   receipt_id?: string;
 }
 
-/* ---------- Applications (event log) ---------- */
+/* ---------- Event Ledger ---------- */
+
+export type LedgerAction =
+  | 'application_submitted'
+  | 'resume_viewed'
+  | 'interview_scheduled'
+  | 'rejection_sent';
+
+/**
+ * One line of `events/<job_id>.jsonl`. Append only: entries are never edited or
+ * removed, which is what lets a report be audited against what actually
+ * happened rather than against a mutable status field the company controls.
+ */
+export interface LedgerEvent {
+  job_id: string;
+  github_login: string;
+  action: LedgerAction;
+  at: ISODate;
+  /** Who appended the line. Company actions must be authored by the company. */
+  actor: 'candidate' | 'company';
+}
+
+/* ---------- Applications ---------- */
 
 export type ApplicationStatus = 'submitted' | 'viewed' | 'interviewing' | 'rejected';
 
+/**
+ * Derived from the ledger, never stored. Projecting it on read means a company
+ * cannot change a candidate's visible state without appending an event that
+ * also moves its own Ghost Score.
+ */
 export interface Application {
   job_id: string;
   github_login: string;

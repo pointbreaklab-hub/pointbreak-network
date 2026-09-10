@@ -67,9 +67,9 @@ export function bandFor(score: number): GhostBand {
 }
 
 export const BAND_LABELS: Record<GhostBand, { emoji: string; label: string }> = {
-  active: { emoji: '🟢', label: 'Active' },
-  evergreen: { emoji: '🟡', label: 'Evergreen' },
-  ghost: { emoji: '🔴', label: 'Ghost job' }
+  active: { emoji: '🟢', label: 'Active Interviewing' },
+  evergreen: { emoji: '🟡', label: 'Evergreen Repost' },
+  ghost: { emoji: '🔴', label: 'Ghost Job' }
 };
 
 /**

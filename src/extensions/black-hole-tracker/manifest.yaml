@@ -6,7 +6,7 @@ description: Records what companies do not do. A non-response is a data point wi
 
 routes:
   - path: /app/tracker
-    component: components/ApplicationStatus.svelte
+    component: components/TrackerView.svelte
     nav:
       label: Tracker
       icon: radar
