@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { session } from '$core/auth/session';
-  import { theme } from './theme';
+  import { session } from '$core/auth/session.svelte';
+  import { theme } from './theme.svelte';
   import type { NavItem } from '$core/registry';
 
   let { items = [] }: { items: NavItem[] } = $props();

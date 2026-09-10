@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { session } from '$core/auth/session';
+  import { session } from '$core/auth/session.svelte';
   import type { Snippet } from 'svelte';
 
   let { children }: { children: Snippet } = $props();

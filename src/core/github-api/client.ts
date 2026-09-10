@@ -6,7 +6,7 @@
  * 304 and don't count against the limit.
  */
 
-import { session } from '$core/auth/session';
+import { session } from '$core/auth/session.svelte';
 import { db, markFresh } from '$core/db';
 
 const API = 'https://api.github.com';

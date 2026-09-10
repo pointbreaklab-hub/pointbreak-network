@@ -6,6 +6,16 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="%sveltekit.assets%/manifest.json" />
     <meta name="theme-color" content="#0b0d10" />
+    <script>
+      // Runs before first paint. With SSR off every page is the same shell, so
+      // without this the shell's default theme flashes on every load before the
+      // store corrects it. Key must match TOKEN in core/layout/theme.svelte.ts.
+      try {
+        var stored = localStorage.getItem('pb.theme');
+        document.documentElement.dataset.theme =
+          stored || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      } catch (e) {}
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

@@ -3,33 +3,84 @@
 
 import { build, files, version } from '$service-worker';
 
-// Offline caching for the UI shell only. Network data is Git-backed JSON and is
-// cached separately in IndexedDB, where it can be invalidated by ETag.
+/**
+ * Offline shell caching.
+ *
+ * Network data is Git-backed JSON cached separately in IndexedDB, where it can
+ * be invalidated by ETag. This worker only handles the UI shell.
+ */
+
 const CACHE = `pointbreak-shell-${version}`;
-const SHELL = [...build, ...files];
+const PRECACHE = [...build, ...files];
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
 
 worker.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
-  worker.skipWaiting();
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE);
+
+      // Added one at a time rather than with addAll(), which is atomic: a
+      // single unreachable URL there discards the entire precache and the
+      // worker never activates, silently disabling offline support.
+      const results = await Promise.allSettled(PRECACHE.map((asset) => cache.add(asset)));
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      if (failed > 0) {
+        console.warn(`[sw] ${failed}/${PRECACHE.length} shell assets failed to precache`);
+      }
+
+      await worker.skipWaiting();
+    })()
+  );
 });
 
 worker.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => worker.clients.claim())
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+      await worker.clients.claim();
+    })()
   );
 });
 
 worker.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method !== 'GET' || new URL(request.url).origin !== location.origin) return;
+  if (request.method !== 'GET') return;
 
-  // Cache-first for the immutable build output; never for API responses.
-  event.respondWith(
-    caches.match(request).then((cached) => cached ?? fetch(request))
-  );
+  const url = new URL(request.url);
+  if (url.origin !== location.origin) return;
+
+  // Hashed build output is content-addressed, so a cache hit can never be
+  // stale — the filename changes when the content does.
+  if (url.pathname.startsWith('/_app/immutable/')) {
+    event.respondWith(cacheFirst(request));
+    return;
+  }
+
+  // Everything else, HTML shells included, is network-first. Serving a cached
+  // shell after a deploy hands the user markup that references asset hashes the
+  // new build already deleted — a blank page until they clear site data.
+  event.respondWith(networkFirst(request));
 });
+
+async function cacheFirst(request: Request): Promise<Response> {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+
+  const response = await fetch(request);
+  if (response.ok) (await caches.open(CACHE)).put(request, response.clone());
+  return response;
+}
+
+async function networkFirst(request: Request): Promise<Response> {
+  try {
+    const response = await fetch(request);
+    if (response.ok) (await caches.open(CACHE)).put(request, response.clone());
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    throw error;
+  }
+}

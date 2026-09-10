@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { session } from '$core/auth/session';
+  import { session } from '$core/auth/session.svelte';
 </script>
 
 <svelte:head><title>Feed · PointBreak</title></svelte:head>

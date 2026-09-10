@@ -15,6 +15,12 @@ const config = {
       precompress: false,
       strict: false
     }),
+    serviceWorker: {
+      // CNAME and dotfiles are deploy metadata, not part of the offline shell.
+      // They also aren't always served (Vite's preview refuses dotfiles), and a
+      // single 404 in the precache list used to abort the whole install.
+      files: (filename) => !filename.startsWith('.') && filename !== 'CNAME'
+    },
     alias: {
       $core: 'src/core',
       $extensions: 'src/extensions'
