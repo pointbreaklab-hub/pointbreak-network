@@ -6,7 +6,7 @@ description: Browse postings with disclosed funnel stats and client-side ghost s
 
 routes:
   - path: /app/jobs
-    component: components/JobFeed.svelte
+    component: components/JobBoard.svelte
     nav:
       label: Jobs
       icon: briefcase

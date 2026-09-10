@@ -6,7 +6,7 @@ description: A candidate record of things shipped, with evidence — not duties 
 
 routes:
   - path: /app/profile
-    component: components/ShipLogList.svelte
+    component: components/ProfileView.svelte
     nav:
       label: Profile
       icon: user
