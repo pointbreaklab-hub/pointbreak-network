@@ -68,6 +68,27 @@ relative so the page loads there, but in-app links are root-absolute
 side navigation is therefore broken on the github.io URL and correct on the
 apex, which is what `paths.base = ''` in `svelte.config.js` assumes.
 
+## Base path
+
+Pages currently serves this at `https://pointbreaklab-hub.github.io/pointbreak-network/`,
+a subpath. SvelteKit needs to know, or every internal link resolves against the
+origin root and 404s. It is set by the `PUBLIC_BASE_PATH` repository variable.
+
+| Where it is served | `PUBLIC_BASE_PATH` |
+|---|---|
+| `pointbreaklab-hub.github.io/pointbreak-network/` | `/pointbreak-network` |
+| `pointbreaklab.com` (apex, once DNS is live) | empty |
+
+Set it to empty at the same time as the custom domain, not before and not after.
+A mismatch does not fail the build, it ships a site whose every link is broken.
+
+Locally, `npm run dev` and `npm run preview` serve from the root, so leave it
+unset. To reproduce the subpath build:
+
+```bash
+PUBLIC_BASE_PATH=/pointbreak-network npm run build
+```
+
 ## Build variables
 
 The workflow reads these from **repository variables** (Settings → Secrets and
@@ -79,7 +100,9 @@ compiled into the client bundle.
 | `PUBLIC_GITHUB_CLIENT_ID` | OAuth app client id for Device Flow |
 | `PUBLIC_DATA_REPO` | `owner/repo` holding the JSON data |
 | `PUBLIC_RECEIPT_PUBKEY` | Ed25519 public key receipts verify against |
-| `PUBLIC_WORKER_URL` | Receipt Worker origin |
+| `PUBLIC_WORKER_URL` | Worker origin. Only needed when publishing is on |
+| `PUBLIC_BASE_PATH` | Subpath the site is served from. See above |
+| `PUBLIC_PUBLISH_LEDGER` | `true` sends events to the Worker. Off by default |
 
 ## Worker
 

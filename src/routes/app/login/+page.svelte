@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import { goto } from '$app/navigation';
   import { pollForToken, requestDeviceCode, session, type DeviceCode } from '$core/auth';
   import { ghFetch } from '$core/github-api';
@@ -16,7 +17,7 @@
       session.signIn({ token, github_login: '' });
       const user = await ghFetch<{ login: string }>('/user');
       session.signIn({ token, github_login: user.login });
-      await goto('/app/feed');
+      await goto(`${base}/app/feed`);
     } catch (e) {
       error = e instanceof Error ? e.message : 'sign-in failed';
     } finally {

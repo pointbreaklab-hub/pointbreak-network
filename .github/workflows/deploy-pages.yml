@@ -38,6 +38,10 @@ jobs:
           PUBLIC_DATA_REPO: ${{ vars.PUBLIC_DATA_REPO }}
           PUBLIC_RECEIPT_PUBKEY: ${{ vars.PUBLIC_RECEIPT_PUBKEY }}
           PUBLIC_WORKER_URL: ${{ vars.PUBLIC_WORKER_URL }}
+          # '/pointbreak-network' while Pages serves from a subpath. Set this
+          # repository variable to empty once the apex domain is live.
+          PUBLIC_BASE_PATH: ${{ vars.PUBLIC_BASE_PATH }}
+          PUBLIC_PUBLISH_LEDGER: ${{ vars.PUBLIC_PUBLISH_LEDGER }}
 
       - uses: actions/configure-pages@v5
         with:

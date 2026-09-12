@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import { BLACK_HOLE_AFTER_DAYS, HIGH_VOLUME_APPLICATIONS, STALE_AFTER_DAYS } from '$core/math-engine';
 
   const features = [
@@ -42,13 +43,13 @@
 
   <div class="mt-7 flex flex-wrap gap-3">
     <a
-      href="/app/feed"
+      href="{base}/app/feed"
       class="rounded-lg bg-accent px-5 py-2.5 font-medium text-bg hover:opacity-90"
     >
       Launch App
     </a>
     <a
-      href="/app/post-job"
+      href="{base}/app/post-job"
       class="rounded-lg border border-edge px-5 py-2.5 font-medium hover:bg-elevated"
     >
       Post a job

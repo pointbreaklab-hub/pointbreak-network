@@ -92,6 +92,25 @@ Implemented verbatim in `src/core/math-engine/ghost-score.ts`. Clamped to 0–10
 
 ---
 
+## Current mode: local only
+
+Writes land in IndexedDB and are not published. `PUBLIC_PUBLISH_LEDGER` is
+`false`, so the Worker is not required and does not need deploying.
+
+This is deliberate rather than unfinished. With one user a shared ledger
+computes nothing a local one cannot: squad counts and company scores need
+several people logging the same posting. Turning publishing on is a repository
+variable plus a deployed Worker, and the code path is already written and
+type-checked.
+
+What works today with no server at all: logging applications from any source,
+tracking silence, attesting to claims, ghost scoring, and the whole read side.
+What is illustration rather than real data: squad counts and company scores,
+which come from the fixture ledger.
+
+What you lose without publishing: your history lives in one browser. Export from
+the tracker keeps a copy.
+
 ## Resolved since the design review
 
 - **Data repo exists.** `pointbreaklab-hub/pointbreak-data`, seeded with the

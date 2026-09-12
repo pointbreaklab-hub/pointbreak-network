@@ -2,7 +2,12 @@
   import { session } from '$core/auth/session.svelte';
   import { db } from '$core/db';
   import { BLACK_HOLE_AFTER_DAYS, detectAll, projectAll } from '$core/math-engine';
-  import { appendEvent, localEvent, type AppendInput } from '$core/ledger';
+  import {
+    appendEvent,
+    exportLocalData,
+    PUBLISHING_ENABLED,
+    type AppendInput
+  } from '$core/ledger';
   import { companyIdFromUrl, mintApplicationRef, normalizeJobUrl } from '$lib/identity';
   import type { LedgerEvent } from '$lib/types';
   import { loadTracker } from '../data';
@@ -38,21 +43,29 @@
   const dark = $derived(detectAll(mine, all).filter((r) => r.is_black_hole).length);
 
   /**
-   * Shows the change immediately, then commits through the Worker. On failure
-   * the optimistic event is rolled back, because a row that looks confirmed but
-   * is absent from the ledger is worse than an error message.
+   * The local write is the commit, so nothing is rolled back. A failed publish
+   * downgrades to a warning rather than discarding what you recorded.
    */
   async function append(input: AppendInput) {
-    const optimistic = localEvent(input);
-    events = [...events, optimistic];
     writeError = null;
-
     try {
-      await appendEvent(input);
+      const result = await appendEvent(input);
+      events = [...events, result.event];
+      if (result.warning) writeError = result.warning;
     } catch (e) {
-      events = events.filter((ev) => ev.id !== optimistic.id);
-      writeError = e instanceof Error ? e.message : 'Could not write to the ledger.';
+      writeError = e instanceof Error ? e.message : 'Could not record that.';
     }
+  }
+
+  function download() {
+    void exportLocalData().then((json) => {
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pointbreak-tracker-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
   }
 
   function attest(claim: LedgerEvent, verdict: 'confirmed' | 'disputed') {
@@ -111,12 +124,32 @@
   const field = 'rounded-md border border-edge bg-elevated px-2.5 py-1.5 text-fg';
 </script>
 
-<h1 class="text-lg font-medium">Black Hole Tracker</h1>
-<p class="mt-1 mb-5 max-w-3xl text-sm text-muted">
-  Log anything you applied to, wherever you found it. Rows are projected from an append-only
-  ledger, and a company action only counts once you confirm it happened, so silence cannot be
-  papered over by a recruiter marking work as done.
-</p>
+<div class="mb-5 flex items-start justify-between gap-4">
+  <div class="max-w-3xl">
+    <h1 class="text-lg font-medium">Black Hole Tracker</h1>
+    <p class="mt-1 text-sm text-muted">
+      Log anything you applied to, wherever you found it. Rows are projected from an append-only
+      ledger, and a company action only counts once you confirm it happened, so silence cannot be
+      papered over by a recruiter marking work as done.
+    </p>
+  </div>
+  <button
+    type="button"
+    onclick={download}
+    class="shrink-0 rounded-md border border-edge px-3 py-1.5 text-sm text-muted hover:text-fg"
+  >
+    Export
+  </button>
+</div>
+
+{#if !PUBLISHING_ENABLED}
+  <p class="mb-5 rounded-md border border-edge p-3 text-sm text-muted">
+    <strong class="text-fg">Stored on this device only.</strong>
+    Nothing you log here is published, so squad counts and company scores come from the
+    demonstration data below rather than from other real people. Export keeps a copy, because
+    clearing site data would otherwise lose it.
+  </p>
+{/if}
 
 <form onsubmit={logApplication} class="mb-6 flex flex-wrap items-end gap-3">
   <label class="grid gap-1 text-sm text-muted">

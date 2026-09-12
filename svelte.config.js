@@ -25,10 +25,12 @@ const config = {
       $core: 'src/core',
       $extensions: 'src/extensions'
     },
-    // Custom domain (pointbreaklab.com) => empty base path.
-    // For a github.io/<repo> deploy instead, set: base: '/pointbreak-network'
+    // Empty on the apex domain, '/pointbreak-network' on github.io, where
+    // Pages serves from a subpath. Getting this wrong does not fail the build,
+    // it ships a site whose every internal link 404s, so it is driven by an
+    // explicit variable rather than a guess.
     paths: {
-      base: ''
+      base: (process.env.PUBLIC_BASE_PATH ?? '').replace(/\/$/, '')
     }
   }
 };
