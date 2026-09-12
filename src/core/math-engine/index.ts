@@ -15,6 +15,15 @@ export {
 export { detect, detectAll, squadSizes, BLACK_HOLE_AFTER_DAYS } from './black-hole';
 
 export {
+  voucherCredibility,
+  weighAttestations,
+  applyAttestations,
+  CREDIBILITY_SATURATION,
+  MERGED_PR_MULTIPLIER,
+  MIN_CREDIBLE_WEIGHT
+} from './attestation';
+
+export {
   projectApplication,
   projectAll,
   deriveMetrics,

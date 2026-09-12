@@ -1,6 +1,8 @@
 <script lang="ts">
   import { session } from '$core/auth/session.svelte';
+  import { db } from '$core/db';
   import { BLACK_HOLE_AFTER_DAYS, detectAll, projectAll } from '$core/math-engine';
+  import { appendEvent, localEvent, type AppendInput } from '$core/ledger';
   import { companyIdFromUrl, mintApplicationRef, normalizeJobUrl } from '$lib/identity';
   import type { LedgerEvent } from '$lib/types';
   import { loadTracker } from '../data';
@@ -15,6 +17,7 @@
   let url = $state('');
   let title = $state('');
   let formError = $state<string | null>(null);
+  let writeError = $state<string | null>(null);
 
   $effect(() => {
     const login = session.current?.github_login;
@@ -34,19 +37,29 @@
   const mine = $derived(all.filter((a) => myRefs.includes(a.application_ref)));
   const dark = $derived(detectAll(mine, all).filter((r) => r.is_black_hole).length);
 
-  function append(event: Omit<LedgerEvent, 'id'>) {
-    // TODO: commit to events/<job_id>.jsonl. Appending locally first keeps the
-    // UI responsive and matches how the committed write will behave.
-    events = [...events, { ...event, id: `ev_local_${crypto.randomUUID().slice(0, 8)}` }];
+  /**
+   * Shows the change immediately, then commits through the Worker. On failure
+   * the optimistic event is rolled back, because a row that looks confirmed but
+   * is absent from the ledger is worse than an error message.
+   */
+  async function append(input: AppendInput) {
+    const optimistic = localEvent(input);
+    events = [...events, optimistic];
+    writeError = null;
+
+    try {
+      await appendEvent(input);
+    } catch (e) {
+      events = events.filter((ev) => ev.id !== optimistic.id);
+      writeError = e instanceof Error ? e.message : 'Could not write to the ledger.';
+    }
   }
 
   function attest(claim: LedgerEvent, verdict: 'confirmed' | 'disputed') {
-    append({
+    void append({
       job_id: claim.job_id,
       application_ref: claim.application_ref,
       action: verdict === 'confirmed' ? 'claim_confirmed' : 'claim_disputed',
-      at: new Date().toISOString(),
-      actor: 'candidate',
       ref_event: claim.id
     });
   }
@@ -77,13 +90,19 @@
 
     titles = { ...titles, [jobId]: title.trim() || `${company} posting` };
     myRefs = [...myRefs, ref];
-    append({
-      job_id: jobId,
+
+    // Kept locally so the ref survives a reload. The public ledger never
+    // carries the link between this ref and the signed-in account.
+    void db.myApplications.put({
       application_ref: ref,
-      action: 'application_submitted',
-      at: new Date().toISOString(),
-      actor: 'candidate'
+      job_id: jobId,
+      job_title: title.trim() || `${company} posting`,
+      company_id: company,
+      source_url: normalized,
+      created_at: new Date().toISOString()
     });
+
+    void append({ job_id: jobId, application_ref: ref, action: 'application_submitted' });
 
     url = '';
     title = '';
@@ -115,6 +134,10 @@
 
 {#if formError}
   <p class="mb-4 text-sm text-danger">{formError}</p>
+{/if}
+
+{#if writeError}
+  <p class="mb-4 rounded-md border border-danger p-3 text-sm text-danger">{writeError}</p>
 {/if}
 
 {#if loading}

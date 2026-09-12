@@ -2,19 +2,27 @@
   import { session } from '$core/auth/session.svelte';
   import { db, isStale, markFresh } from '$core/db';
   import { RateLimitError } from '$core/github-api';
-  import type { UserProfile } from '$lib/types';
+  import { applyAttestations, weighAttestations } from '$core/math-engine';
+  import type { UserProfile, WeightedAttestation } from '$lib/types';
   import { relativeTime } from '$lib/utils';
+  import { loadAttestations, loadVoucherProfiles } from '../attestations';
   import { loadProfile } from '../data';
+  import Attestations from './Attestations.svelte';
   import ContributionVolumeCard from './ContributionVolume.svelte';
   import ShipLogList from './ShipLogList.svelte';
   import SkillMatrix from './SkillMatrix.svelte';
 
   let profile = $state<UserProfile | null>(null);
+  let vouches = $state<WeightedAttestation[]>([]);
   let error = $state<string | null>(null);
   let loading = $state(false);
   let refreshing = $state(false);
 
   const CACHE_TTL_MS = 60 * 60 * 1000;
+
+  // Skills with vouches folded in. A skill evidenced only by attestation still
+  // appears, which is the whole point for work that was never public.
+  const skills = $derived(profile ? applyAttestations(profile.skills, vouches) : []);
 
   async function load(force = false) {
     const login = session.current?.github_login;
@@ -22,12 +30,13 @@
 
     error = null;
 
-    // Show cached data immediately, then refresh behind it. Building a profile
-    // costs ~26 API calls, so this is not something to repeat on every visit.
     const cached = await db.profiles.get(login);
     if (cached) profile = cached;
 
-    if (!force && cached && !(await isStale(`profile:${login}`, CACHE_TTL_MS))) return;
+    if (!force && cached && !(await isStale(`profile:${login}`, CACHE_TTL_MS))) {
+      await loadVouches(login);
+      return;
+    }
 
     if (cached) refreshing = true;
     else loading = true;
@@ -37,6 +46,7 @@
       await db.profiles.put(fresh);
       await markFresh(`profile:${login}`);
       profile = fresh;
+      await loadVouches(login);
     } catch (e) {
       error =
         e instanceof RateLimitError
@@ -50,6 +60,21 @@
     }
   }
 
+  async function loadVouches(login: string) {
+    try {
+      const attestations = await loadAttestations(login);
+      if (attestations.length === 0) {
+        vouches = [];
+        return;
+      }
+      const profiles = await loadVoucherProfiles(attestations.map((a) => a.attested_by));
+      vouches = weighAttestations(attestations, profiles);
+    } catch {
+      // A profile is still worth showing without its vouches.
+      vouches = [];
+    }
+  }
+
   $effect(() => {
     if (session.current?.github_login) load();
   });
@@ -59,7 +84,7 @@
   <div>
     <h1 class="text-lg font-medium">{profile?.github_login ?? session.current?.github_login}</h1>
     <p class="text-sm text-muted">
-      Read from GitHub. Nothing on this page is self-reported.
+      Read from GitHub and from vouches other people signed. Nothing here is self-reported.
       {#if profile?.updated_at}
         <span class="tabular"> · updated {relativeTime(profile.updated_at)}</span>
       {/if}
@@ -72,7 +97,7 @@
     disabled={loading || refreshing}
     class="rounded-md border border-edge px-3 py-1.5 text-sm text-muted hover:text-fg disabled:opacity-40"
   >
-    {refreshing ? 'Refreshing…' : 'Refresh'}
+    {refreshing ? 'Refreshing...' : 'Refresh'}
   </button>
 </header>
 
@@ -81,7 +106,7 @@
 {/if}
 
 {#if loading}
-  <p class="text-muted">Reading your repositories and merged pull requests…</p>
+  <p class="text-muted">Reading your repositories and merged pull requests...</p>
 {:else if profile}
   <section class="mb-8">
     <ContributionVolumeCard volume={profile.contributions} />
@@ -89,17 +114,19 @@
 
   <section class="mb-8">
     <h2 class="mb-1 text-base font-medium">Skills</h2>
-    <p class="mb-3 text-sm text-muted">
-      Each claim shows what backs it. Public commits are the weakest evidence here and a peer
-      vouching is the strongest, because a named engineer staked their account on it.
+    <p class="mb-3 max-w-2xl text-sm text-muted">
+      Each claim shows what backs it. Public commits are the weakest evidence here and a colleague
+      vouching under their own name is the strongest.
     </p>
-    <SkillMatrix skills={profile.skills} />
+    <SkillMatrix {skills} />
   </section>
+
+  <Attestations {vouches} subject={profile.github_login} />
 
   <section>
     <h2 class="mb-1 text-base font-medium">Ship logs</h2>
     <p class="mb-3 text-sm text-muted">
-      Merged pull requests, work someone else reviewed and accepted.
+      Merged pull requests, meaning work someone else reviewed and accepted.
     </p>
     <ShipLogList logs={profile.ship_logs} />
   </section>

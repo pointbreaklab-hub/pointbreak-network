@@ -246,6 +246,46 @@ export interface Skill {
   evidence: SkillEvidence[];
 }
 
+/**
+ * One engineer vouching for another on a named skill.
+ *
+ * Unlike applications, this is not pseudonymous, and that is the point: an
+ * anonymous vouch is worth nothing. The voucher's real login is recorded and
+ * their own credibility is what gives the vouch weight.
+ *
+ * Stored in `attestations/<subject>.jsonl`, append only.
+ */
+export interface PeerAttestation {
+  id: string;
+  /** GitHub login of the person being vouched for. */
+  subject: string;
+  skill: string;
+  /** What they actually saw. A vouch with no specifics carries little weight. */
+  note: string;
+  attested_by: string;
+  at: ISODate;
+}
+
+/**
+ * How much one voucher's opinion counts.
+ *
+ * Derived only from things GitHub itself attests, never from anything the
+ * voucher typed about themselves. That is what makes a ring of fresh accounts
+ * vouching for each other worthless: none of them has a footprint to lend.
+ */
+export interface VoucherCredibility {
+  login: string;
+  /** 0 to 1. */
+  weight: number;
+  /** Why, for display. */
+  basis: { public_commits: number; merged_prs: number; private_contributions: number };
+}
+
+export interface WeightedAttestation {
+  attestation: PeerAttestation;
+  credibility: VoucherCredibility;
+}
+
 export interface ShipLog {
   repo: string;
   pr: number;

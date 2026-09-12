@@ -161,6 +161,39 @@ action, and the gap between it and now is the entire Black Hole signal.
 Projecting rather than storing means a company cannot change what a candidate
 sees without appending an event that also moves its own Ghost Score.
 
+## Peer attestations
+
+Appended to `attestations/<subject_login>.jsonl`, one per line, append only.
+
+```jsonc
+{
+  "id": "att_9f2c4b17e3a85d0c",
+  "subject": "priya-raghavan",     // lowercased GitHub login
+  "skill": "Kotlin",
+  "note": "Rewrote our settlement engine, ~40k lines. I reviewed most of it.",
+  "attested_by": "marcus-bell",    // real login, deliberately not pseudonymous
+  "at": "2026-09-12T10:00:00Z"
+}
+```
+
+These are the one place identity is the point. An anonymous vouch is worth
+nothing, so the voucher's login is recorded and their credibility is what gives
+the vouch weight.
+
+A vouch carries no intrinsic weight. It inherits the voucher's, computed by
+`voucherCredibility()` from public commits, merged pull requests at twenty times
+a commit, and the aggregate private contribution total, on a square root curve
+saturating at 8,000. Nothing the voucher says about themselves counts, which is
+what makes a ring of fresh accounts worth zero.
+
+Vouches below weight `0.05` are kept in the ledger and rendered as zero rather
+than removed, because deleting them would hide the attempt.
+
+Constraints, enforced by the Worker: no self-vouching, one vouch per voucher per
+subject per skill, and the same minimum account age as ledger appends.
+
+Run `npm run scenario:attestation` for a worked example.
+
 ## `receipt.json`
 
 Signed by the Worker's Ed25519 key. Verifiable offline, so the client never has

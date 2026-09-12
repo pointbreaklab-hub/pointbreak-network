@@ -11,6 +11,7 @@
     "prepare": "svelte-kit sync",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "net": "tsx scripts/net-cli.ts",
+    "scenario:attestation": "tsx scripts/attestation-scenario.ts",
     "worker:dev": "wrangler dev --config worker/wrangler.toml",
     "worker:deploy": "wrangler deploy --config worker/wrangler.toml"
   },

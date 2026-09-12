@@ -189,6 +189,100 @@ which evidence backs each claim rather than collapsing them into one number.
 Private contribution totals come from GitHub's `restrictedContributionsCount`,
 which proves volume without naming a single repository.
 
+### Ledger writes, and why the Worker makes them
+
+Both gaps left open by the previous revision came down to one fact: **a Git
+commit carries its author.**
+
+If a candidate committed their own application, `git log` on the public data
+repo would map every pseudonymous `application_ref` back to a real person, and
+an employer could read an employee's entire job search. Setting the `author`
+field does not help, because GitHub records the authenticated pusher regardless.
+Fork-and-PR leaks the same way through the PR author.
+
+So pseudonymous append to a shared public ledger cannot be done with the
+candidate's own credentials. The Worker commits on everyone's behalf, and only
+the random ref reaches the file.
+
+This makes the Worker a trusted component, which it was not before. The design
+narrows that trust rather than hiding it:
+
+- **Issuance and append are separate requests.** `POST /ledger/token`
+  authenticates the account and names only the job. `POST /ledger/append`
+  authenticates with the token and names only the ref. No single request
+  contains both a login and a ref.
+- **The guard store holds no plaintext.** Sybil keys are HMACs of
+  account and job, so a dump of the namespace identifies nobody.
+- **Timestamps are server-stamped**, since a client-supplied time could backdate
+  silence.
+- **Candidates cannot append company claims.** The append route rejects any
+  company action outright, so nobody can credit a company on its behalf, or
+  frame one.
+
+The residual assumption is that the Worker does not log across requests to
+correlate issuance with append. It does not, and the source is in this
+repository, but that is an operational promise rather than a cryptographic
+guarantee. The real fix is a blind signature scheme, where the Worker signs a
+token it provably cannot recognise later. That is the intended replacement.
+
+### Sybil resistance
+
+Squad counts are the most visible number in the product, so manufacturing them
+has to cost something.
+
+- **One token per account per posting.** A single person cannot mint twenty refs
+  against one job.
+- **Minimum account age**, default 30 days. Throwaway accounts are the cheapest
+  way to fake consensus.
+- **Monthly append budget**, default 60, which bounds the damage if someone
+  farms aged accounts.
+- **Single-use tokens**, so one issuance cannot become an unbounded stream.
+
+A determined attacker with many aged GitHub accounts can still inflate a count.
+The claim is that it is no longer free, not that it is impossible.
+
+### Peer attestation
+
+The path that works when your work was never public. A colleague who reviewed it
+says so, under their own name.
+
+Unlike applications, attestations are **not** pseudonymous. An anonymous vouch
+is worth nothing, so the voucher's real login is recorded.
+
+The obvious attack is a ring: ten fresh accounts vouch for each other and all
+ten look credible. The defence is that a vouch has no intrinsic weight. It
+inherits the voucher's, computed only from what GitHub attests about them, so a
+ring multiplies zero.
+
+Credibility counts public commits, merged pull requests at twenty times the
+weight of a commit, and the aggregate private contribution total, on a square
+root curve so one prolific account cannot dominate every vouch it makes.
+Private contributions are included deliberately: an engineer behind a corporate
+firewall is often the most valuable voucher about another such engineer, and
+excluding them would rebuild the bias this model exists to remove.
+
+Worked example, verifiable by running the scenario:
+
+| Voucher | Public | PRs | Private | Weight |
+|---|---|---|---|---|
+| `marcus-bell`, her tech lead, bank, little public | 40 | 2 | 6,200 | **0.886** |
+| `sofia-almeida`, former colleague, works in the open | 2,040 | 90 | 900 | 0.770 |
+| `dev-okonkwo`, junior who worked with her briefly | 200 | 3 | 0 | 0.180 |
+| `ring-alpha`, `ring-beta`, `ring-gamma`, created last month | 0 | 0 | 0 | **0.000** |
+
+Priya has fourteen years at a bank and three public commits. Before
+attestation her profile reads `Java: 3 public commits` and nothing else. After,
+it reads `Java: 3 public commits + 0.77 vouched` and `Kotlin: 1.07 vouched`, a
+skill with no public evidence at all, plus the 4,812 private contributions
+GitHub confirms without naming a repository.
+
+The ring's attempt to manufacture a Rust skill never appears. Its vouches stay
+in the ledger, shown as zero rather than deleted, because deleting them would
+hide the attempt.
+
+Abuse controls: you cannot vouch for yourself, one vouch per person per skill,
+and the same account age bar applies.
+
 ## 5. Data flow and state management
 
 - **Source of truth.** GitHub repositories holding JSON/JSONL.
@@ -202,8 +296,10 @@ Entities:
 - **Job Post.** Title, source, salary and whether it was disclosed at all, tech
   stack, description hash, receipt, current status. No metrics: those are
   derived.
-- **Event Ledger.** Append-only log of actions: application submitted, resume
-  viewed, interview scheduled, rejection sent.
+- **Event Ledger.** Append-only log of actions. Written only by the Worker, and
+  carrying pseudonymous refs rather than logins.
+- **Peer Attestation.** A vouch from one engineer to another on a named skill,
+  carrying the voucher's real identity.
 - **Application Record.** Derived from the ledger, never stored. Keyed by a
   pseudonymous application ref, not by a person.
 

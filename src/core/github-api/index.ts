@@ -7,4 +7,4 @@ export {
   RateLimitError,
   AuthError
 } from './client';
-export { readJSON, writeJSON, listDir } from './repos';
+export { readJSON, readJSONL, writeJSON, listDir } from './repos';

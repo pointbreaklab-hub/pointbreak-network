@@ -92,6 +92,20 @@ Implemented verbatim in `src/core/math-engine/ghost-score.ts`. Clamped to 0–10
 
 ---
 
+## Resolved since the design review
+
+- **Data repo exists.** `pointbreaklab-hub/pointbreak-data`, seeded with the
+  layout and the write policy.
+- **Ledger writes go to Git.** Through the Worker, because a Git commit carries
+  its author and a candidate committing their own application would deanonymise
+  every pseudonymous ref. See PRD section 4a.
+- **Sybil resistance.** One token per account per posting, a minimum account
+  age, a monthly budget, and single-use tokens. Squad counts are no longer free
+  to manufacture.
+- **Peer attestation.** Implemented with credibility inherited from the
+  voucher's GitHub-attested footprint, so vouch rings produce zero. Run
+  `npm run scenario:attestation` for the worked example.
+
 ## Not yet built
 
 - **3.4** Async encrypted inbox. UI renders; no key exchange, no polling, no
@@ -101,12 +115,21 @@ Implemented verbatim in `src/core/math-engine/ghost-score.ts`. Clamped to 0–10
 - **Zero-trust reporting** (PRD section 6). The ledger it audits exists, is
   append only, and claim disputes are implemented. Still missing: report
   submission, the audit routine, and the dismissal path.
-- **Sybil resistance.** Distinct application refs are assumed to be distinct
-  people. Squad counts are a floor, not a proof. No mitigation yet.
-- **Private ref backup.** Application refs live only in IndexedDB. Clearing
-  site data loses tracker history. Needs an opt-in private repo backup.
-- **Ledger writes.** Attestation and external logging append locally and are
-  not yet committed to the data repo.
+- **Blind-signed append tokens.** Issuance and append are split so the Worker
+  never sees a login and a ref in one request, but not correlating them across
+  requests is an operational promise rather than a proof. A blind signature
+  scheme would make it one.
+- **Private ref backup.** Application refs live only in IndexedDB. Clearing site
+  data loses tracker history. Needs an opt-in private repo backup.
+- **Company claim route.** Companies cannot yet append claims at all. The
+  append route deliberately rejects them, so there is nothing for candidates to
+  attest except fixtures.
+- **Worker deployment.** `worker/wrangler.toml` needs a real KV namespace id and
+  five secrets before it will deploy. Until then every ledger write fails
+  closed with a visible error, which is the correct behaviour but not a working
+  one.
+- **Aggregate indexer.** Nothing walks `events/` to build the job list, so the
+  board still reads fixtures. Individual writes work.
 - **Data repo.** `pointbreaklab-hub/pointbreak-data` does not exist. Job board
   and tracker read fixtures behind an async seam; profile reads live GitHub.
 

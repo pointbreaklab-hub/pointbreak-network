@@ -1,22 +1,37 @@
-name = "pointbreak-receipts"
+name = "pointbreak-worker"
 main = "src/index.ts"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
 
-# The ONLY server in this architecture. It exists for two reasons:
+# The only server in this architecture. It exists for three reasons:
 #   1. Stripe cannot webhook into a static site.
-#   2. The receipt signing key must never reach the browser.
-# It stores nothing. Everything it produces is written back to Git.
+#   2. The receipt signing key must never reach a browser.
+#   3. A Git commit carries its author, so candidates cannot commit their own
+#      applications without deanonymising themselves. See src/index.ts.
 
 [vars]
 DATA_REPO = "pointbreaklab-hub/pointbreak-data"
 ALLOWED_ORIGIN = "https://pointbreaklab.com"
 
-# Secrets. Set with `wrangler secret put <NAME>`, never in this file:
+# Sybil controls. An account younger than this cannot move any number, and no
+# account can append more than the monthly budget.
+MIN_ACCOUNT_AGE_DAYS = "30"
+MONTHLY_APPEND_BUDGET = "60"
+
+# Holds only opaque HMAC keys: which (account, posting) pairs have been claimed,
+# which nonces are spent, monthly counters. No logins, no job ids, no
+# application refs, so a dump of this namespace does not deanonymise anyone.
+[[kv_namespaces]]
+binding = "GUARD"
+id = "REPLACE_WITH_KV_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+
+# Secrets, set with `wrangler secret put <NAME>`, never in this file:
 #   STRIPE_SECRET_KEY
 #   STRIPE_WEBHOOK_SECRET
-#   RECEIPT_SIGNING_KEY   (Ed25519 private key, base64)
-#   GITHUB_APP_TOKEN      (write access to the data repo)
+#   RECEIPT_SIGNING_KEY    Ed25519 private key, base64
+#   GITHUB_APP_TOKEN       write access to DATA_REPO, and nothing else
+#   TOKEN_SIGNING_KEY      HMAC key for append tokens and guard keys
 
 [observability]
 enabled = true

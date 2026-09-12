@@ -3,7 +3,7 @@
  * A write is a commit; the audit log is `git log`.
  */
 
-import { ghFetch } from './client';
+import { ghFetch, GitHubError } from './client';
 
 const DATA_REPO = import.meta.env.PUBLIC_DATA_REPO ?? 'pointbreaklab-hub/pointbreak-data';
 
@@ -24,6 +24,31 @@ function encode(text: string): string {
 export async function readJSON<T>(path: string): Promise<{ data: T; sha: string }> {
   const res = await ghFetch<ContentsResponse>(`/repos/${DATA_REPO}/contents/${path}`);
   return { data: JSON.parse(decode(res.content)) as T, sha: res.sha };
+}
+
+/**
+ * Reads an append-only JSONL file. Malformed lines are skipped rather than
+ * failing the read: the ledger is append only, so a bad line written once can
+ * never be removed, and one of them must not take down every reader forever.
+ */
+export async function readJSONL<T>(path: string): Promise<T[]> {
+  try {
+    const res = await ghFetch<ContentsResponse>(`/repos/${DATA_REPO}/contents/${path}`);
+    return decode(res.content)
+      .split('\n')
+      .filter((line) => line.trim())
+      .flatMap((line) => {
+        try {
+          return [JSON.parse(line) as T];
+        } catch {
+          return [];
+        }
+      });
+  } catch (e) {
+    // A file that does not exist yet is an empty ledger, not an error.
+    if (e instanceof GitHubError && (e.status === 404 || e.status === 304)) return [];
+    throw e;
+  }
 }
 
 export async function listDir(path: string): Promise<Array<{ name: string; path: string }>> {
