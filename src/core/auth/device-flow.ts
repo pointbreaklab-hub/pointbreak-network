@@ -1,9 +1,26 @@
 /**
  * GitHub OAuth Device Flow.
  *
- * Chosen because it is the only OAuth flow that completes without a server:
- * no client secret, no redirect handler. The user types a code on github.com
- * and we poll for the token.
+ * UNUSABLE FROM A BROWSER. Kept for reference and for the day a proxy exists.
+ *
+ * Device Flow was chosen because it needs no client secret, which is true and
+ * was the right instinct for a static site. It does not solve the other half of
+ * the problem: `github.com/login/device/code` and
+ * `github.com/login/oauth/access_token` send no Access-Control-Allow-Origin
+ * header, so a browser refuses the request before it leaves. The symptom is a
+ * bare "Failed to fetch" with no detail, because that is all CORS tells you.
+ *
+ * Verify for yourself:
+ *
+ *   curl -si -X POST https://github.com/login/device/code \
+ *     -H 'Origin: https://example.com' | grep -i access-control
+ *
+ * Nothing comes back. `api.github.com` does send the header, which is why every
+ * other call in this app works.
+ *
+ * So completing Device Flow requires something server-side to relay the two
+ * token calls. Until that exists, auth uses a personal access token the user
+ * pastes, which needs no relay because it never touches github.com/login.
  */
 
 const GITHUB = 'https://github.com';
@@ -18,8 +35,9 @@ export interface DeviceCode {
   interval: number;
 }
 
-export async function requestDeviceCode(): Promise<DeviceCode> {
-  const res = await fetch(`${GITHUB}/login/device/code`, {
+/** Requires a CORS-relaying proxy. See the note above. */
+export async function requestDeviceCode(relay: string): Promise<DeviceCode> {
+  const res = await fetch(`${relay}${GITHUB}/login/device/code`, {
     method: 'POST',
     headers: { accept: 'application/json', 'content-type': 'application/json' },
     body: JSON.stringify({ client_id: CLIENT_ID, scope: SCOPES })
@@ -28,12 +46,10 @@ export async function requestDeviceCode(): Promise<DeviceCode> {
   return res.json();
 }
 
-/**
- * Polls until the user authorizes or the code expires.
- * GitHub's `slow_down` means back off. Ignoring it gets the app rate-limited.
- */
+/** Requires the same relay. GitHub's `slow_down` means back off. */
 export async function pollForToken(
   device: DeviceCode,
+  relay: string,
   signal?: AbortSignal
 ): Promise<string> {
   let interval = device.interval * 1000;
@@ -43,7 +59,7 @@ export async function pollForToken(
     if (signal?.aborted) throw new Error('aborted');
     await new Promise((r) => setTimeout(r, interval));
 
-    const res = await fetch(`${GITHUB}/login/oauth/access_token`, {
+    const res = await fetch(`${relay}${GITHUB}/login/oauth/access_token`, {
       method: 'POST',
       headers: { accept: 'application/json', 'content-type': 'application/json' },
       body: JSON.stringify({

@@ -48,7 +48,7 @@ Implementation status lives in [ROADMAP.md](ROADMAP.md). Schemas live in
 
 1. **Discovery.** Lands on `pointbreaklab.com`, reads the manifesto, clicks
    "Launch App".
-2. **Authentication.** GitHub Device Flow at `/app/login`. No passwords.
+2. **Authentication.** A fine-grained token pasted at `/app/login`. No passwords, no OAuth app. See section 4b.
 3. **Profile generation.** The app fetches public GitHub data and generates a
    Ship Log profile, with verified skills from commit volume and merged PRs
    rather than self-reported claims.
@@ -86,8 +86,9 @@ Implementation status lives in [ROADMAP.md](ROADMAP.md). Schemas live in
 
 ### Phase 2: identity and core infrastructure
 
-- **GitHub Device Flow auth.** Generates a device code, prompts authorization on
-  GitHub, polls for the access token.
+- **Token sign-in.** The user creates a fine-grained token, scoped read-only,
+  and pastes it. Verified against `/user` before being stored. Device Flow is
+  not usable from a browser, see section 4b.
 - **GitHub API wrapper.** Fetches and commits JSON, with ETag caching to respect
   rate limits.
 - **Local caching layer.** IndexedDB caches profiles, jobs, and events for
@@ -224,6 +225,33 @@ correlate issuance with append. It does not, and the source is in this
 repository, but that is an operational promise rather than a cryptographic
 guarantee. The real fix is a blind signature scheme, where the Worker signs a
 token it provably cannot recognise later. That is the intended replacement.
+
+### 4b. Why auth is a pasted token, not Device Flow
+
+Rule 6 originally said GitHub OAuth Device Flow. It solves the client-secret
+problem, which is the reason it was chosen, and it cannot be completed from a
+static page.
+
+`github.com/login/device/code` and `github.com/login/oauth/access_token` send no
+`Access-Control-Allow-Origin` header, so the browser refuses the request before
+it leaves. The only symptom is a bare "Failed to fetch", because that is all
+CORS reports. Check it directly:
+
+```
+curl -si -X POST https://github.com/login/device/code \
+  -H 'Origin: https://example.com' | grep -i access-control
+```
+
+Nothing comes back. `api.github.com` does send the header, which is why every
+other call in the app works.
+
+Completing Device Flow therefore needs a server to relay two requests. Rather
+than add one for sign-in, the user creates a fine-grained token, scopes it, and
+pastes it. That is arguably the better fit anyway: the credential is theirs,
+scoped by them, revocable by them, and no third party issues or holds anything.
+
+Read-only public access plus profile is enough. Nothing in the app asks for
+write scope.
 
 ### Sybil resistance
 

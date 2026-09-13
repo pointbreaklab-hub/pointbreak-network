@@ -1,60 +1,99 @@
 <script lang="ts">
-  import { base } from '$app/paths';
   import { goto } from '$app/navigation';
-  import { pollForToken, requestDeviceCode, session, type DeviceCode } from '$core/auth';
-  import { ghFetch } from '$core/github-api';
+  import { base } from '$app/paths';
+  import { session, TokenError, verifyToken } from '$core/auth';
 
-  let device = $state<DeviceCode | null>(null);
+  let token = $state('');
   let error = $state<string | null>(null);
   let busy = $state(false);
 
-  async function start() {
+  async function signIn(event: SubmitEvent) {
+    event.preventDefault();
     busy = true;
     error = null;
+
     try {
-      device = await requestDeviceCode();
-      const token = await pollForToken(device);
-      session.signIn({ token, github_login: '' });
-      const user = await ghFetch<{ login: string }>('/user');
-      session.signIn({ token, github_login: user.login });
+      const identity = await verifyToken(token);
+      session.signIn({ token: token.trim(), github_login: identity.github_login });
+      token = '';
       await goto(`${base}/app/feed`);
     } catch (e) {
-      error = e instanceof Error ? e.message : 'sign-in failed';
+      error = e instanceof TokenError ? e.message : 'Sign-in failed.';
     } finally {
       busy = false;
     }
   }
 </script>
 
-<h1>Sign in with GitHub</h1>
-<p class="lede">
-  No password, no redirect, no server. You authorize a device code on github.com and the token stays
-  in your browser.
+<svelte:head><title>Sign in · PointBreak</title></svelte:head>
+
+<h1 class="text-xl font-medium">Sign in with a GitHub token</h1>
+
+<p class="mt-2 max-w-2xl text-muted">
+  No password, no OAuth app, no server. You create a token, you scope it, you revoke it. It is
+  stored in this browser and sent only to api.github.com.
 </p>
 
-{#if device}
-  <div class="code">
-    <p>Enter this code at <a href={device.verification_uri} target="_blank" rel="noreferrer noopener">{device.verification_uri}</a></p>
-    <strong class="tabular">{device.user_code}</strong>
-    <p class="fine">Waiting for authorization…</p>
-  </div>
-{:else}
-  <button type="button" onclick={start} disabled={busy}>
-    {busy ? 'Starting…' : 'Get a device code'}
+<form onsubmit={signIn} class="mt-6 grid max-w-xl gap-3">
+  <label class="grid gap-1 text-sm text-muted">
+    Personal access token
+    <input
+      type="password"
+      bind:value={token}
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="github_pat_..."
+      required
+      class="rounded-md border border-edge bg-elevated px-2.5 py-1.5 font-mono text-sm text-fg"
+    />
+  </label>
+
+  <button
+    type="submit"
+    disabled={busy}
+    class="justify-self-start rounded-lg bg-accent px-5 py-2 font-medium text-bg disabled:opacity-40"
+  >
+    {busy ? 'Checking...' : 'Sign in'}
   </button>
+</form>
+
+{#if error}
+  <p class="mt-3 max-w-xl rounded-md border border-danger p-3 text-sm text-danger">{error}</p>
 {/if}
 
-{#if error}<p class="error">{error}</p>{/if}
+<section class="mt-8 max-w-2xl border-t border-edge pt-6">
+  <h2 class="text-base font-medium">Creating one</h2>
+  <ol class="mt-2 grid gap-2 text-sm text-muted">
+    <li>
+      1. Open
+      <a
+        href="https://github.com/settings/personal-access-tokens/new"
+        target="_blank"
+        rel="noreferrer noopener"
+        class="text-accent">Settings, Developer settings, Fine-grained tokens</a
+      >.
+    </li>
+    <li>2. Repository access: <strong class="text-fg">Public repositories (read-only)</strong>.</li>
+    <li>
+      3. Account permissions: <strong class="text-fg">Profile, read-only</strong>. That is enough to
+      read your commit counts and merged pull requests.
+    </li>
+    <li>4. Set an expiry. Ninety days is sensible. Paste it above.</li>
+  </ol>
 
-<style>
-  h1 { font-size: 1.4rem; }
-  .lede { color: var(--fg-muted); max-width: 34rem; }
-  .code { border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; max-width: 28rem; }
-  .code strong { font-size: 2rem; letter-spacing: 0.15em; display: block; margin: 0.5rem 0; }
-  .fine { color: var(--fg-muted); font-size: 0.85rem; margin: 0; }
-  button {
-    background: var(--accent); color: var(--bg); border: none; border-radius: 8px;
-    padding: 0.6rem 1.1rem; font: inherit; font-weight: 500; cursor: pointer;
-  }
-  .error { color: var(--danger); }
-</style>
+  <p class="mt-4 text-sm text-muted">
+    Nothing here needs write access. If you later turn on publishing to the shared ledger, that goes
+    through a separate service and still never asks for a write token.
+  </p>
+</section>
+
+<section class="mt-6 max-w-2xl rounded-md border border-edge p-4 text-sm text-muted">
+  <h2 class="font-medium text-fg">Why not the usual GitHub button</h2>
+  <p class="mt-1">
+    OAuth Device Flow was the plan, and it cannot work here. GitHub's
+    <code>github.com/login/*</code> endpoints send no
+    <code>Access-Control-Allow-Origin</code> header, so a browser blocks the call before it is sent.
+    Completing that flow needs a server to relay two requests, and this app is meant to run without
+    one. A token you create yourself skips the problem entirely.
+  </p>
+</section>

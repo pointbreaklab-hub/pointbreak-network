@@ -3,6 +3,11 @@ import { browser } from '$app/environment';
 const TOKEN_KEY = 'pb.token';
 const LOGIN_KEY = 'pb.login';
 
+export interface GhIdentity {
+  github_login: string;
+  display_name?: string;
+}
+
 export interface Session {
   token: string;
   github_login: string;

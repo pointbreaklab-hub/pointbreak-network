@@ -1,2 +1,3 @@
 export { requestDeviceCode, pollForToken, type DeviceCode } from './device-flow';
-export { session, type Session } from './session.svelte';
+export { verifyToken, TokenError } from './token';
+export { session, type Session, type GhIdentity } from './session.svelte';
