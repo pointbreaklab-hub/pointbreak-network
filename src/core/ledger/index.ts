@@ -48,7 +48,21 @@ const MESSAGES: Record<string, string> = {
   cannot_vouch_for_yourself: 'You cannot vouch for yourself.',
   git_write_conflict: 'The ledger is busy. Try again in a moment.',
   service_unreachable:
-    'Saved on this device, but could not reach the publishing service, so nobody else can see it yet.'
+    'Saved on this device, but could not reach the publishing service, so nobody else can see it yet.',
+
+  // The most likely real failure: a token that expired or was revoked. This is
+  // what a user actually hits, so it gets a message that says what to do.
+  bad_github_token:
+    'GitHub rejected your token, so this was saved on this device only. It has probably expired or been revoked. Sign in again with a new one.',
+  missing_token: 'Sign in before publishing.',
+
+  // Transient protocol failures. A user can only retry.
+  token_expired: 'That took too long. Saved locally, try publishing again.',
+  bad_token_signature: 'The publishing service rejected the request. Saved locally.',
+  token_already_used: 'Already published. Saved locally.',
+  git_write_failed:
+    'Saved on this device, but the ledger could not be written. Nothing is lost, try again later.',
+  note_too_long: 'That note is too long. Keep it under 500 characters.'
 };
 
 function friendly(code: string): string {
@@ -77,7 +91,13 @@ async function post<T>(path: string, body: unknown, authenticated: boolean): Pro
 
   const payload = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) {
-    const code = payload.error ?? `http_${res.status}`;
+    const code = (payload.error ?? `http_${res.status}`).split(':')[0];
+
+    // A rejected GitHub token cannot be salvaged, and leaving it in storage
+    // means every later call fails the same way. Drop it so the guard returns
+    // the user to sign-in, matching what the API client does on a 401.
+    if (code === 'bad_github_token') session.signOut();
+
     throw new LedgerError(friendly(code), code);
   }
 
