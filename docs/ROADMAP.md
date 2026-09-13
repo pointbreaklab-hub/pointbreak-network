@@ -43,7 +43,8 @@ These are binding. A change that violates one is a bug, not a trade-off.
 
 ## Phase 2: Auth & core infrastructure
 
-- [x] **2.1** GitHub OAuth Device Flow (`src/core/auth/`)
+- [x] **2.1** Sign-in. Pasted fine-grained token. Device Flow cannot work from a
+      browser, see [PRD section 4b](PRD.md)
 - [x] **2.2** GitHub API wrapper with ETag caching (`src/core/github-api/`)
 - [x] **2.3** Dexie/IndexedDB local cache (`src/core/db/`)
 
@@ -52,13 +53,20 @@ These are binding. A change that violates one is a bug, not a trade-off.
 - [x] **3.1** Ship Logs profile: repos, commit history, verified skills, merged-PR timeline
 - [x] **3.2** Job board: salaries, tech stacks, transparency badges, external postings (fixture-backed)
 - [x] **3.3** Black Hole Tracker: states, 14-day flag, Squad count, claim attestation, external logging (fixture-backed)
-- [ ] **3.4** Async encrypted messaging: requests, polling, no WebSockets
+- [~] **3.4** Async encrypted messaging. Inbox UI renders its empty state. No key
+      exchange, no polling, no data source, no commit path
 
 ## Phase 4: Company experience
 
-- [ ] **4.1** Job creation form: exact salary, client-side repost warning
-- [ ] **4.2** Payment handshake: Worker → Stripe → signed receipt → commit
-- [ ] **4.3** Company dashboard: Ghost Score meter, action nudges, close reasons
+- [~] **4.1** Job creation form. UI done: exact salary rejected when the band is
+      wider than 25% of its midpoint, live Jaccard repost warning. Not wired: it
+      cannot submit, because 4.2 is not built
+- [ ] **4.2** Payment handshake. Nothing built. The service has a Stripe webhook
+      stub that verifies signatures and does nothing else
+- [!] **4.3** Company dashboard. Components built (Ghost Score meter, action
+      nudges, close reasons) but `/app/company` **crashes**: the route host
+      renders ApplicantManager with no props and scoreJob reads first_seen_at
+      on undefined. It is a blank page reachable from the nav
 
 ## Phase 5: The math engine
 
@@ -69,7 +77,10 @@ These are binding. A change that violates one is a bug, not a trade-off.
 ## Phase 6: Polish & deployment
 
 - [x] **6.1** GitHub Actions CI/CD
-- [x] **6.2** Domain configuration: apex `pointbreaklab.com`, see [DEPLOYMENT.md](DEPLOYMENT.md)
+- [~] **6.2** Domain. DNS is done: all four A records resolve to GitHub Pages.
+      The Pages custom domain is **not set**, so the site still serves from
+      `github.io/pointbreak-network/`. Setting it also means clearing
+      `PUBLIC_BASE_PATH`, see [DEPLOYMENT.md](DEPLOYMENT.md)
 - [x] **6.3** PWA manifest + service worker
 
 ---
@@ -91,6 +102,8 @@ Implemented verbatim in `src/core/math-engine/ghost-score.ts`. Clamped to 0–10
 `last_action_at` older than 14 days while status is `submitted` or `viewed`.
 
 ---
+
+Key: `[x]` done, `[~]` partly done, `[!]` built but broken, `[ ]` not started.
 
 ## Current mode: local only
 
