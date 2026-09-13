@@ -63,10 +63,11 @@ These are binding. A change that violates one is a bug, not a trade-off.
       cannot submit, because 4.2 is not built
 - [ ] **4.2** Payment handshake. Nothing built. The service has a Stripe webhook
       stub that verifies signatures and does nothing else
-- [!] **4.3** Company dashboard. Components built (Ghost Score meter, action
-      nudges, close reasons) but `/app/company` **crashes**: the route host
-      renders ApplicantManager with no props and scoreJob reads first_seen_at
-      on undefined. It is a blank page reachable from the nav
+- [~] **4.3** Company dashboard. Renders: posting switcher, Ghost Score meter,
+      rule breakdown, action nudges, pseudonymous applicant list, close reasons.
+      Fixture-backed, and closing a posting does not write anything. Company
+      claiming does not exist, so it shows demonstration postings rather than
+      yours
 
 ## Phase 5: The math engine
 

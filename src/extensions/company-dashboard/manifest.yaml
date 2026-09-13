@@ -6,7 +6,7 @@ description: Ghost-score warnings and applicant management for companies that po
 
 routes:
   - path: /app/company
-    component: components/ApplicantManager.svelte
+    component: components/CompanyDashboard.svelte
     nav:
       label: Company
       icon: building
