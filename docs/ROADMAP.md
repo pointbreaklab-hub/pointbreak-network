@@ -144,8 +144,9 @@ the tracker keeps a copy.
 Specified in [PRD section 9](PRD.md). Nothing built. Three decisions marked OPEN
 there change the data model and should be settled first.
 
-- [ ] **7.1** Employment verification by corporate domain, with expiry turning a
-      lapsed badge into a dated employment record
+- [ ] **7.1** Domain verification. Employment expires into a dated record;
+      education does not, because the claim is past tense. Neither counts
+      toward skill
 - [ ] **7.2** Company claiming, which falls out of 7.1 and is what makes the
       company dashboard real rather than fixture-backed
 - [ ] **7.3** CV upload, parse and correct, publishing only redacted structure

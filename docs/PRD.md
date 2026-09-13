@@ -457,6 +457,53 @@ publish. The hash exists only to detect one address verifying many accounts.
 - **A usable "hiring manager" audience** for 9.3, with the caveat that a
   verified domain proves employment, not authority to hire.
 
+### Education, same mechanism, different meaning
+
+Studying somewhere verifies the same way: a code to an address at the
+institution's domain. Four things differ, and they matter.
+
+**It does not expire, because the claim is past tense.** "Works at" is a present
+tense claim and needs re-checking. "Studied at" is permanent, so it is verified
+once and stands. This also avoids a trap: some universities revoke access on
+graduation, so requiring re-verification would punish exactly the graduates the
+badge is for.
+
+**It is weaker evidence than employment, and should be presented as such.** A
+student address usually outlives the relationship, so there is no liveness
+check, and .edu addresses are openly traded for student discounts. Employment
+verification re-proves itself; education verification cannot. A reader should
+not read the two badges as equally strong.
+
+**There is no global TLD pattern.** `.edu` is United States only. Elsewhere:
+`.ac.uk`, `.ac.in`, `.edu.au`, and then Germany and Canada break any rule at all
+with `tu-berlin.de`, `utoronto.ca`, `mcgill.ca`, `tudelft.nl`. Matching on a TLD
+would verify Americans and reject everyone else. The per-institution domain
+allowlist already required for companies handles this, and is the only thing
+that can.
+
+**It proves affiliation, not a degree.** Someone who left after one semester has
+the same address as a doctoral graduate, and so does the maintenance staff. The
+badge says `verified @mit.edu`, and the degree, field, class and graduation year
+stay unverified claims on the CV.
+
+One domain registry serves both, since a university is also an employer. The
+record carries the domains; the user states whether they studied or worked
+there; the badge shows the claim and the verified domain side by side. Someone
+could verify as staff and claim to have studied, and short of registrar
+integration nothing prevents that. Showing both is the honest answer.
+
+### Education must not count toward skill
+
+The manifesto says candidates prove skills through shipped work. A degree is a
+credential, and weighting it as skill evidence would walk this product back
+toward the thing it exists to argue against.
+
+So an education badge corroborates the education lines on a CV and contributes
+nothing to skill evidence or ranking. It is biography, not proof of ability.
+Employment verification is treated the same way: it corroborates employment
+dates, and the work itself is still evidenced by commits, merged pull requests,
+private contribution volume and vouches.
+
 ### OPEN: sending the mail
 
 This needs a mail service, and it is a harder dependency than it looks.
