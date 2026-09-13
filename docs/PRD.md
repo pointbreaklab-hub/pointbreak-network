@@ -31,7 +31,7 @@ Implementation status lives in [ROADMAP.md](ROADMAP.md). Schemas live in
 5. **ODS-style modularity.** `core` holds routing, auth, and state.
    `extensions` hold features, auto-discovered via manifest files so they can be
    toggled without breaking the core app.
-6. **One external server.** A serverless Cloudflare Worker handles Stripe and
+6. **One external server.** A serverless ledger service handles Stripe and
    PayPal micro-payments and returns cryptographically signed receipts.
 7. **Candidate-first measurement.** A job does not need a company account to be
    measured. Candidates log postings from anywhere and the network scores them
@@ -66,7 +66,7 @@ Implementation status lives in [ROADMAP.md](ROADMAP.md). Schemas live in
 2. **Job creation.** At `/app/post-job`, fills in role, exact salary, and tech
    stack. The client-side engine compares the description against their past
    postings and warns if it will be flagged as an Evergreen Repost.
-3. **Payment.** The Worker processes the micro-fee and returns a signed receipt.
+3. **Payment.** The ledger service processes the micro-fee and returns a signed receipt.
    The app commits the job data and the receipt to the repo.
 4. **Reputation management.** The dashboard shows a live Ghost Score with
    Action Nudges prompting bulk rejections or scheduled interviews.
@@ -110,7 +110,7 @@ Implementation status lives in [ROADMAP.md](ROADMAP.md). Schemas live in
 
 - **Job creation form.** Enforces exact salary and specific tech stack. Runs the
   Jaccard/Cosine similarity check to detect copy-pasted Evergreen descriptions.
-- **Payment handshake.** Cloudflare Worker processes the fee and the signed
+- **Payment handshake.** ledger service processes the fee and the signed
   receipt is stored in the job's JSON file.
 - **Company dashboard.** Live Ghost Score meter, applicant management, and
   Action Nudges.
@@ -190,7 +190,7 @@ which evidence backs each claim rather than collapsing them into one number.
 Private contribution totals come from GitHub's `restrictedContributionsCount`,
 which proves volume without naming a single repository.
 
-### Ledger writes, and why the Worker makes them
+### Ledger writes, and why the ledger service makes them
 
 Both gaps left open by the previous revision came down to one fact: **a Git
 commit carries its author.**
@@ -202,10 +202,10 @@ field does not help, because GitHub records the authenticated pusher regardless.
 Fork-and-PR leaks the same way through the PR author.
 
 So pseudonymous append to a shared public ledger cannot be done with the
-candidate's own credentials. The Worker commits on everyone's behalf, and only
+candidate's own credentials. The ledger service commits on everyone's behalf, and only
 the random ref reaches the file.
 
-This makes the Worker a trusted component, which it was not before. The design
+This makes the ledger service a trusted component, which it was not before. The design
 narrows that trust rather than hiding it:
 
 - **Issuance and append are separate requests.** `POST /ledger/token`
@@ -220,10 +220,10 @@ narrows that trust rather than hiding it:
   company action outright, so nobody can credit a company on its behalf, or
   frame one.
 
-The residual assumption is that the Worker does not log across requests to
+The residual assumption is that the ledger service does not log across requests to
 correlate issuance with append. It does not, and the source is in this
 repository, but that is an operational promise rather than a cryptographic
-guarantee. The real fix is a blind signature scheme, where the Worker signs a
+guarantee. The real fix is a blind signature scheme, where the ledger service signs a
 token it provably cannot recognise later. That is the intended replacement.
 
 ### 4b. Why auth is a pasted token, not Device Flow
@@ -324,7 +324,7 @@ Entities:
 - **Job Post.** Title, source, salary and whether it was disclosed at all, tech
   stack, description hash, receipt, current status. No metrics: those are
   derived.
-- **Event Ledger.** Append-only log of actions. Written only by the Worker, and
+- **Event Ledger.** Append-only log of actions. Written only by the ledger service, and
   carrying pseudonymous refs rather than logins.
 - **Peer Attestation.** A vouch from one engineer to another on a named skill,
   carrying the voucher's real identity.
@@ -342,7 +342,7 @@ Entities:
 - **Client-side encryption.** Message contents are encrypted in the browser
   before being pushed. GitHub stores ciphertext only.
 - **No secrets in the frontend.** Payment keys and OAuth client secrets never
-  appear in the Svelte codebase. Payments route through the Worker, and Device
+  appear in the Svelte codebase. Payments route through the ledger service, and Device
   Flow needs no client secret.
 - **Rate limiting.** Relies on GitHub's native limits plus local ETag caching.
 
@@ -351,7 +351,7 @@ Entities:
 - **Automated builds.** GitHub Actions on every push to `main`: type-check,
   build static assets, deploy with the `actions/deploy-pages` artifact method.
 - **DNS.** Apex uses four A records pointing at GitHub Pages. `www` is a CNAME
-  to the Pages URL. `app.pointbreaklab.com` is a Cloudflare 301 redirect to
+  to the Pages URL. `app.pointbreaklab.com` is a the ledger service 301 redirect to
   `pointbreaklab.com/app/`.
 - **Service worker.** Precaches the app shell and hashed assets cache-first,
   network-first for dynamic calls.

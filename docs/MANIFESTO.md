@@ -35,7 +35,7 @@ be held hostage. Migration is `git clone`.
 
 The client is a static bundle on GitHub Pages. Reads go straight to the GitHub
 API. Writes are commits signed by the user's own credentials. The single
-exception is a stateless Cloudflare Worker that verifies payment webhooks and
+exception is a stateless ledger service that verifies payment webhooks and
 signs receipts, because Stripe cannot call a static file and a signing key
 cannot live in a browser. It stores nothing.
 

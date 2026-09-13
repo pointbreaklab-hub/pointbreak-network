@@ -8,22 +8,24 @@
  * give up is everything that requires other people: squad counts, and any
  * company score built from more than your own reports.
  *
- * Published. Events additionally go to the Worker, which commits them to the
- * public ledger. This is only worth switching on once several people are
- * logging the same postings, because with one user a shared ledger computes
+ * Published. Events additionally go to the ledger service in `server/`, which
+ * commits them to the public repo. Only worth switching on once several people
+ * are logging the same postings, because with one user a shared ledger computes
  * nothing a local one cannot.
  *
- * Why a Worker rather than committing directly: a Git commit carries its
+ * Why a service rather than committing directly: a Git commit carries its
  * author, so a candidate committing their own application would publish the
  * link between a pseudonymous application_ref and themselves. That is the exact
- * exposure the pseudonym exists to prevent.
+ * exposure the pseudonym exists to prevent. The service is in this repository
+ * and self-hosted, so the only party you trust with that relay is whoever runs
+ * it, which is you.
  */
 
 import { session } from '$core/auth/session.svelte';
 import { db } from '$core/db';
 import type { LedgerAction, LedgerEvent } from '$lib/types';
 
-const WORKER = import.meta.env.PUBLIC_WORKER_URL ?? '';
+const LEDGER_URL = import.meta.env.PUBLIC_LEDGER_URL ?? '';
 export const PUBLISHING_ENABLED = import.meta.env.PUBLIC_PUBLISH_LEDGER === 'true';
 
 export class LedgerError extends Error {
@@ -45,7 +47,7 @@ const MESSAGES: Record<string, string> = {
   already_vouched_for_this_skill: 'You have already vouched for this person on this skill.',
   cannot_vouch_for_yourself: 'You cannot vouch for yourself.',
   git_write_conflict: 'The ledger is busy. Try again in a moment.',
-  worker_unreachable:
+  service_unreachable:
     'Saved on this device, but could not reach the publishing service, so nobody else can see it yet.'
 };
 
@@ -57,7 +59,7 @@ async function post<T>(path: string, body: unknown, authenticated: boolean): Pro
   const headers: Record<string, string> = { 'content-type': 'application/json' };
 
   // Only the token request carries identity. The append must not, so that no
-  // single request to the Worker contains both a login and a ref.
+  // single request to the ledger service contains both a login and a ref.
   if (authenticated) {
     const token = session.current?.token;
     if (!token) throw new LedgerError('Sign in first.', 'not_signed_in');
@@ -66,11 +68,11 @@ async function post<T>(path: string, body: unknown, authenticated: boolean): Pro
 
   let res: Response;
   try {
-    res = await fetch(`${WORKER}${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
+    res = await fetch(`${LEDGER_URL}${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
   } catch {
     // fetch rejects on DNS failure, offline and CORS refusal alike, with no
     // detail, so "failed to fetch" would explain nothing.
-    throw new LedgerError(friendly('worker_unreachable'), 'worker_unreachable');
+    throw new LedgerError(friendly('service_unreachable'), 'service_unreachable');
   }
 
   const payload = (await res.json().catch(() => ({}))) as { error?: string };

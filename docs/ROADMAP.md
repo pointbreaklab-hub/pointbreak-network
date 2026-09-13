@@ -29,7 +29,7 @@ These are binding. A change that violates one is a bug, not a trade-off.
 5. **ODS modularity.** Features live in `src/extensions/` with `manifest.yaml`.
    `src/core/` handles only routing, auth, and state.
 6. **Auth.** GitHub OAuth Device Flow. No client secrets in the frontend.
-7. **Payments.** External Cloudflare Worker. The app only receives and verifies
+7. **Payments.** External ledger service. The app only receives and verifies
    a signed receipt.
 
 ---
@@ -95,7 +95,7 @@ Implemented verbatim in `src/core/math-engine/ghost-score.ts`. Clamped to 0–10
 ## Current mode: local only
 
 Writes land in IndexedDB and are not published. `PUBLIC_PUBLISH_LEDGER` is
-`false`, so the Worker is not required and does not need deploying.
+`false`, so the ledger service is not required and does not need deploying.
 
 This is deliberate rather than unfinished. With one user a shared ledger
 computes nothing a local one cannot: squad counts and company scores need
@@ -115,7 +115,7 @@ the tracker keeps a copy.
 
 - **Data repo exists.** `pointbreaklab-hub/pointbreak-data`, seeded with the
   layout and the write policy.
-- **Ledger writes go to Git.** Through the Worker, because a Git commit carries
+- **Ledger writes go to Git.** Through the ledger service, because a Git commit carries
   its author and a candidate committing their own application would deanonymise
   every pseudonymous ref. See PRD section 4a.
 - **Sybil resistance.** One token per account per posting, a minimum account
@@ -134,7 +134,7 @@ the tracker keeps a copy.
 - **Zero-trust reporting** (PRD section 6). The ledger it audits exists, is
   append only, and claim disputes are implemented. Still missing: report
   submission, the audit routine, and the dismissal path.
-- **Blind-signed append tokens.** Issuance and append are split so the Worker
+- **Blind-signed append tokens.** Issuance and append are split so the ledger service
   never sees a login and a ref in one request, but not correlating them across
   requests is an operational promise rather than a proof. A blind signature
   scheme would make it one.
@@ -143,7 +143,7 @@ the tracker keeps a copy.
 - **Company claim route.** Companies cannot yet append claims at all. The
   append route deliberately rejects them, so there is nothing for candidates to
   attest except fixtures.
-- **Worker deployment.** `worker/wrangler.toml` needs a real KV namespace id and
+- **Worker deployment.** `server/.env` needs a real KV namespace id and
   five secrets before it will deploy. Until then every ledger write fails
   closed with a visible error, which is the correct behaviour but not a working
   one.

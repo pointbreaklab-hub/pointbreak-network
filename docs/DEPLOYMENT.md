@@ -41,8 +41,8 @@ the custom domain in repository settings.
 
 Pages serves exactly one custom hostname, so an `app` subdomain pointed at it
 returns a 404 rather than the site. If you want that hostname to work, make it
-an **HTTP redirect at the DNS provider**, not a CNAME to Pages. On Cloudflare
-(already in use for the receipt Worker) that is a Redirect Rule:
+an **HTTP redirect at the DNS provider**, not a CNAME to Pages. On the ledger service
+(already in use for the ledger service) that is a Redirect Rule:
 
 ```
 app.pointbreaklab.com/*  →  https://pointbreaklab.com/app/$1   (301)
@@ -100,21 +100,21 @@ compiled into the client bundle.
 | `PUBLIC_GITHUB_CLIENT_ID` | OAuth app client id for Device Flow |
 | `PUBLIC_DATA_REPO` | `owner/repo` holding the JSON data |
 | `PUBLIC_RECEIPT_PUBKEY` | Ed25519 public key receipts verify against |
-| `PUBLIC_WORKER_URL` | Worker origin. Only needed when publishing is on |
+| `PUBLIC_LEDGER_URL` | Worker origin. Only needed when publishing is on |
 | `PUBLIC_BASE_PATH` | Subpath the site is served from. See above |
-| `PUBLIC_PUBLISH_LEDGER` | `true` sends events to the Worker. Off by default |
+| `PUBLIC_PUBLISH_LEDGER` | `true` sends events to the ledger service. Off by default |
 
 ## Worker
 
 Deployed separately from the Pages site:
 
 ```bash
-npm run worker:deploy
+npm run server
 ```
 
-Secrets are set with `wrangler secret put` and never committed:
+Secrets are set with `the environment file` and never committed:
 `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RECEIPT_SIGNING_KEY`,
 `GITHUB_APP_TOKEN`.
 
-Set `ALLOWED_ORIGIN` in `worker/wrangler.toml` to `https://pointbreaklab.com`
+Set `ALLOWED_ORIGIN` in `server/.env` to `https://pointbreaklab.com`
 so CORS matches the single origin above.

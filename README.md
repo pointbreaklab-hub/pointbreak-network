@@ -11,13 +11,16 @@ Git repository, and the ranking algorithm ships in the same repo you're reading.
 
 ```
 Browser (static SvelteKit bundle on GitHub Pages)
-   ├── reads  ──> GitHub REST API  ──> data repo (JSON in Git)
-   ├── writes ──> commits signed by the user's own GitHub identity
-   ├── caches ──> IndexedDB (Dexie), a cache, never a source of truth
-   └── scores ──> client-side math engine, no server round-trip
-                        │
-Cloudflare Worker ──────┘  the ONLY server: verifies Stripe webhooks and
-                           signs Ed25519 receipts. Stateless. Stores nothing.
+   |
+   +-- reads  --> GitHub REST API --> data repo (JSON in Git)
+   +-- caches --> IndexedDB (Dexie), a cache, never a source of truth
+   +-- writes --> IndexedDB. Your tracker works with no server at all
+   +-- scores --> client-side math engine, no round trip
+                        |
+   (optional) ledger service in server/ ------+
+       Commits pseudonymous events to Git, because a Git commit carries its
+       author and a candidate committing their own application would undo the
+       pseudonymity. Self-hosted, ~400 lines, file-backed store, no vendor.
 ```
 
 Two consequences worth stating plainly:
@@ -35,7 +38,7 @@ Two consequences worth stating plainly:
 | `src/extensions/` | Self-contained features, auto-discovered via `manifest.yaml` |
 | `src/lib/` | Shared types, crypto, utilities |
 | `src/routes/` | SvelteKit file-based routes (thin hosts for extension components) |
-| `worker/` | Cloudflare Worker: Stripe webhook and receipt signer |
+| `server/` | Optional self-hosted ledger service. No managed platform |
 | `scripts/net-cli.ts` | `net` CLI: list/enable/disable extensions, deploy |
 | `docs/` | Manifesto and JSON schema specs |
 
@@ -95,13 +98,13 @@ Pushing to `main` builds and publishes to GitHub Pages via
 [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml).
 `adapter-static` is required: GitHub Pages serves flat files.
 
-The Worker deploys separately:
+The ledger service deploys separately:
 
 ```bash
-npm run worker:deploy
+npm run server
 ```
 
-Worker secrets are set with `wrangler secret put` and never committed:
+Service secrets are set with `the environment file` and never committed:
 `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RECEIPT_SIGNING_KEY`,
 `GITHUB_APP_TOKEN`.
 

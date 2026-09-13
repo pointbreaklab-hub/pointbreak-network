@@ -7,9 +7,10 @@ build/
 dist/
 .vite/
 
-# Cloudflare Worker
-.wrangler/
-worker/dist/
+# Ledger service
+server/.env
+server/data/
+data/
 
 # Secrets. Never commit these
 .env
@@ -29,3 +30,8 @@ secrets.json
 # Logs
 *.log
 npm-debug.log*
+
+# Ledger service
+server/.env
+data/
+server/data/

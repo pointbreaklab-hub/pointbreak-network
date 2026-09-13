@@ -189,15 +189,15 @@ what makes a ring of fresh accounts worth zero.
 Vouches below weight `0.05` are kept in the ledger and rendered as zero rather
 than removed, because deleting them would hide the attempt.
 
-Constraints, enforced by the Worker: no self-vouching, one vouch per voucher per
+Constraints, enforced by the ledger service: no self-vouching, one vouch per voucher per
 subject per skill, and the same minimum account age as ledger appends.
 
 Run `npm run scenario:attestation` for a worked example.
 
 ## `receipt.json`
 
-Signed by the Worker's Ed25519 key. Verifiable offline, so the client never has
-to take the Worker's word for it.
+Signed by the ledger service's Ed25519 key. Verifiable offline, so the client never has
+to take the ledger service's word for it.
 
 ```jsonc
 {

@@ -12,7 +12,7 @@ declare global {
     readonly PUBLIC_GITHUB_CLIENT_ID?: string;
     readonly PUBLIC_DATA_REPO?: string;
     readonly PUBLIC_RECEIPT_PUBKEY?: string;
-    readonly PUBLIC_WORKER_URL?: string;
+    readonly PUBLIC_LEDGER_URL?: string;
     readonly PUBLIC_PUBLISH_LEDGER?: string;
     readonly PUBLIC_BASE_PATH?: string;
   }

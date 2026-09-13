@@ -1,7 +1,7 @@
 /**
  * Ed25519 receipt signing and verification.
  *
- * Signing happens only in the Worker (the key never reaches a browser).
+ * Signing happens only in the ledger service (the key never reaches a browser).
  * Verification happens only here, in the client, so no one has to trust the
  * Worker's word that a receipt is genuine.
  */

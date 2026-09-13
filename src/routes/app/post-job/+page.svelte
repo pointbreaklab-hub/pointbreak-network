@@ -23,7 +23,7 @@
 
   const field = 'rounded-md border border-edge bg-elevated px-2.5 py-1.5 text-fg';
 
-  // TODO: create the Stripe Checkout session via the Worker, then on the signed
+  // TODO: create the Stripe Checkout session via the ledger service, then on the signed
   // receipt commit job.json + receipt.json to the data repo.
   function submit(event: SubmitEvent) {
     event.preventDefault();

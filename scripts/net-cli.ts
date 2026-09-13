@@ -6,7 +6,7 @@
  *   net enable <id>          flip an extension on
  *   net disable <id>         flip it off (it drops out of the bundle entirely)
  *   net deploy               build the static site
- *   net deploy --worker      build the site and deploy the receipt Worker
+ *   net deploy --ledger      build the site and deploy the ledger service
  *
  * Extensions are directories, not registry entries. This only edits the
  * `enabled` flag in each manifest.yaml; discovery happens at build time.
@@ -76,15 +76,17 @@ function setEnabled(id: string, enabled: boolean): void {
   console.log(`${enabled ? 'enabled' : 'disabled'} ${id}`);
 }
 
-function deploy(withWorker: boolean): void {
+function deploy(withLedger: boolean): void {
   const enabled = discover().filter((f) => f.manifest.enabled);
   console.log(`building with ${enabled.length} extension(s): ${enabled.map((e) => e.id).join(', ')}`);
 
   run('npm', ['run', 'build']);
 
-  if (withWorker) {
-    console.log('deploying receipt worker…');
-    run('npx', ['wrangler', 'deploy', '--config', 'worker/wrangler.toml']);
+  if (withLedger) {
+    // The ledger service is self-hosted and long-running, so there is nothing
+    // to deploy from here. Point at the instructions instead of pretending.
+    console.log('\nLedger service: self-hosted, start it with `npm run server`.');
+    console.log('Configuration and Docker: server/README.md');
   }
 
   console.log('\nbuild ready in ./build');
@@ -111,7 +113,7 @@ function usage(): void {
   net enable <id>       enable an extension
   net disable <id>      disable an extension
   net deploy            build the static site
-  net deploy --worker   build, then deploy the receipt Worker
+  net deploy --ledger   build, then show how to run the ledger service
 `);
 }
 
@@ -128,7 +130,7 @@ switch (command) {
     setEnabled(rest[0] ?? fail('usage: net disable <id>'), false);
     break;
   case 'deploy':
-    deploy(rest.includes('--worker'));
+    deploy(rest.includes('--ledger'));
     break;
   default:
     usage();
