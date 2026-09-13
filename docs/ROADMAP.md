@@ -127,6 +127,14 @@ the tracker keeps a copy.
 
 ## Resolved since the design review
 
+- **Aggregate indexer.** `index/network.json` in the data repo bundles jobs,
+  events and companies, rebuilt by a workflow on every ledger change and served
+  from raw.githubusercontent.com: one request, no token, works signed out. The
+  client falls back to walking the directories if it is missing, and to
+  IndexedDB if the network is unreachable. Fixtures now appear only when the
+  ledger is genuinely empty, labelled as demonstration data. Verified by putting
+  a job in the ledger and watching it become a scored posting in a browser.
+
 - **Data repo exists.** `pointbreaklab-hub/pointbreak-data`, seeded with the
   layout and the write policy.
 - **Ledger writes go to Git.** Through the ledger service, because a Git commit carries
@@ -176,8 +184,9 @@ there change the data model and should be settled first.
   five secrets before it will deploy. Until then every ledger write fails
   closed with a visible error, which is the correct behaviour but not a working
   one.
-- **Aggregate indexer.** Nothing walks `events/` to build the job list, so the
-  board still reads fixtures. Individual writes work.
+- **Sharding the index.** One bundled file is fine at hundreds of records and
+  will not be at hundreds of thousands. Split by company or by month when it
+  matters.
 - **Data repo.** `pointbreaklab-hub/pointbreak-data` does not exist. Job board
   and tracker read fixtures behind an async seam; profile reads live GitHub.
 

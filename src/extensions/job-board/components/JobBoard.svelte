@@ -1,9 +1,13 @@
 <script lang="ts">
+  import DemoNotice from '$core/layout/DemoNotice.svelte';
   import { loadScoredJobs, type ScoredJob } from '../data';
+  import type { NetworkSource } from '$core/network';
   import JobFeed from './JobFeed.svelte';
   import JobFilters from './JobFilters.svelte';
 
   let jobs = $state<ScoredJob[]>([]);
+  let source = $state<NetworkSource>('index');
+  let demo = $state(false);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
@@ -14,7 +18,11 @@
 
   $effect(() => {
     loadScoredJobs()
-      .then((result) => (jobs = result))
+      .then((result) => {
+        jobs = result.postings;
+        source = result.source;
+        demo = result.demo;
+      })
       .catch((e: unknown) => (error = e instanceof Error ? e.message : 'Could not load postings.'))
       .finally(() => (loading = false));
   });
@@ -38,6 +46,8 @@
   what companies claim, so a posting can be measured whether or not the company has ever heard of
   us.
 </p>
+
+<DemoNotice {source} {demo} />
 
 <JobFilters bind:stack bind:minSalary bind:hideGhosts bind:disclosedOnly />
 

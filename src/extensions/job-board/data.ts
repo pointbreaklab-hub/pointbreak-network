@@ -1,7 +1,6 @@
-import { deriveMetrics } from '$core/math-engine';
-import { MOCK_EVENTS, MOCK_JOBS } from '$lib/fixtures';
+import { deriveMetrics, scoreJob } from '$core/math-engine';
+import { loadNetwork, type NetworkSource } from '$core/network';
 import type { GhostScore, Job, JobMetrics } from '$lib/types';
-import { scoreJob } from '$core/math-engine';
 
 export interface ScoredJob {
   job: Job;
@@ -9,23 +8,29 @@ export interface ScoredJob {
   score: GhostScore;
 }
 
-/**
- * Jobs with their scores.
- *
- * Metrics are derived from the ledger here rather than read off the job, so a
- * company cannot influence its own score by editing its own file.
- *
- * TODO: replace the fixtures with reads of jobs/ and events/ from the data
- * repo. Everything downstream is already async and shape-stable.
- */
-export async function loadScoredJobs(): Promise<ScoredJob[]> {
-  const jobs = MOCK_JOBS;
-  const events = MOCK_EVENTS;
+export interface JobBoardData {
+  postings: ScoredJob[];
+  source: NetworkSource;
+  /** True when the ledger is empty and these are demonstration postings. */
+  demo: boolean;
+}
 
-  return jobs
+/**
+ * Reads the ledger and scores it.
+ *
+ * Metrics are derived here rather than read off a job, so a company cannot move
+ * its own score by editing its own file, and the index deliberately ships no
+ * scores so this arithmetic stays checkable in the browser.
+ */
+export async function loadScoredJobs(): Promise<JobBoardData> {
+  const network = await loadNetwork();
+
+  const postings = network.jobs
     .filter((job) => job.status === 'open')
     .map((job) => {
-      const metrics = deriveMetrics(job, events, jobs);
+      const metrics = deriveMetrics(job, network.events, network.jobs);
       return { job, metrics, score: scoreJob(job, metrics) };
     });
+
+  return { postings, source: network.source, demo: network.source === 'demo' };
 }

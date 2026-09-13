@@ -1,11 +1,15 @@
 <script lang="ts">
+  import DemoNotice from '$core/layout/DemoNotice.svelte';
   import { loadManagedPostings, type ManagedPosting } from '../data';
+  import type { NetworkSource } from '$core/network';
   import ApplicantManager from './ApplicantManager.svelte';
 
   // ApplicantManager is presentational and needs a posting. Routes render
   // extension components with no props, so it needs a container that loads
   // something first. Without one the route rendered it bare and crashed.
   let postings = $state<ManagedPosting[]>([]);
+  let source = $state<NetworkSource>('index');
+  let demo = $state(false);
   let selectedId = $state<string | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -13,8 +17,10 @@
   $effect(() => {
     loadManagedPostings()
       .then((result) => {
-        postings = result;
-        selectedId ??= result[0]?.job.id ?? null;
+        postings = result.postings;
+        source = result.source;
+        demo = result.demo;
+        selectedId ??= result.postings[0]?.job.id ?? null;
       })
       .catch((e: unknown) => (error = e instanceof Error ? e.message : 'Could not load postings.'))
       .finally(() => (loading = false));
@@ -28,6 +34,8 @@
   Every number here is derived from the ledger. None of it is anything you wrote about yourself,
   and an action you log counts only once the candidate it names confirms it happened.
 </p>
+
+<DemoNotice {source} {demo} />
 
 <p class="mb-5 rounded-md border border-edge p-3 text-sm text-muted">
   <strong class="text-fg">Claiming a company is not built yet.</strong>

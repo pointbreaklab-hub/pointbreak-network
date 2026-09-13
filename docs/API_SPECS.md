@@ -161,6 +161,38 @@ action, and the gap between it and now is the entire Black Hole signal.
 Projecting rather than storing means a company cannot change what a candidate
 sees without appending an event that also moves its own Ghost Score.
 
+## `index/network.json`
+
+Every job, event and company in one file, rebuilt by a workflow whenever the
+ledger changes and served from `raw.githubusercontent.com`.
+
+```jsonc
+{
+  "version": 1,
+  "generated_at": "2026-09-13T20:21:54.167Z",
+  "counts": { "jobs": 1, "events": 6, "companies": 0 },
+  "jobs": [ /* job.json records */ ],
+  "events": [ /* every ledger line */ ],
+  "companies": [ /* company records */ ]
+}
+```
+
+It exists because the client is a static page: reading the repository file by
+file costs one request per job plus one per event, which is impossible at scale
+and exhausts the unauthenticated rate limit for signed-out visitors. One CDN
+file costs one request and needs no token.
+
+**It carries raw records and never computed scores.** Scoring stays in the
+browser so the arithmetic remains checkable, and changing the algorithm does not
+require the ledger to be reindexed. The index is a cache for fetch efficiency;
+the ledger is the source of truth, and deleting the index makes clients walk the
+directories instead.
+
+The CDN caches for five minutes and ignores the query string, so a cache-busting
+parameter does not work. Another person's write can therefore take up to five
+minutes to appear. Your own writes are unaffected, since they are read from
+IndexedDB first.
+
 ## Peer attestations
 
 Appended to `attestations/<subject_login>.jsonl`, one per line, append only.

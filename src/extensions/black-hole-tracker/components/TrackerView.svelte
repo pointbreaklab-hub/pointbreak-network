@@ -10,12 +10,16 @@
   } from '$core/ledger';
   import { companyIdFromUrl, mintApplicationRef, normalizeJobUrl } from '$lib/identity';
   import type { LedgerEvent } from '$lib/types';
+  import DemoNotice from '$core/layout/DemoNotice.svelte';
+  import type { NetworkSource } from '$core/network';
   import { loadTracker } from '../data';
   import ApplicationStatus from './ApplicationStatus.svelte';
 
   let events = $state<LedgerEvent[]>([]);
   let myRefs = $state<string[]>([]);
   let titles = $state<Record<string, string>>({});
+  let source = $state<NetworkSource>('index');
+  let demo = $state(false);
   let error = $state<string | null>(null);
   let loading = $state(true);
 
@@ -33,6 +37,8 @@
         events = data.events;
         myRefs = data.myRefs;
         titles = data.titles;
+        source = data.source;
+        demo = data.demo;
       })
       .catch((e: unknown) => (error = e instanceof Error ? e.message : 'Could not read the ledger.'))
       .finally(() => (loading = false));
@@ -141,6 +147,8 @@
     Export
   </button>
 </div>
+
+<DemoNotice {source} {demo} />
 
 {#if !PUBLISHING_ENABLED}
   <p class="mb-5 rounded-md border border-edge p-3 text-sm text-muted">

@@ -1,5 +1,5 @@
 import { deriveMetrics, projectAll } from '$core/math-engine';
-import { MOCK_EVENTS, MOCK_JOBS } from '$lib/fixtures';
+import { loadNetwork, type NetworkSource } from '$core/network';
 import type { Application, Job, JobMetrics } from '$lib/types';
 
 export interface ManagedPosting {
@@ -8,24 +8,30 @@ export interface ManagedPosting {
   applications: Application[];
 }
 
+export interface CompanyData {
+  postings: ManagedPosting[];
+  source: NetworkSource;
+  demo: boolean;
+}
+
 /**
  * Postings a company would manage.
  *
- * Company identity is not built: nobody can claim a company profile yet, so
- * there is no way to know which postings belong to the signed-in user. Until
- * that exists this returns the fixture postings that were created here, which
- * is what a claimed company would see.
- *
- * TODO: scope to the company the user has claimed, once claiming exists.
+ * Company claiming does not exist, so there is no way to know which postings
+ * belong to the signed-in user. Until it does, this returns everything posted
+ * through PointBreak, which is what a claimed company would see.
  */
-export async function loadManagedPostings(): Promise<ManagedPosting[]> {
-  const applications = projectAll(MOCK_EVENTS);
+export async function loadManagedPostings(): Promise<CompanyData> {
+  const network = await loadNetwork();
+  const applications = projectAll(network.events);
 
-  return MOCK_JOBS.filter((job) => job.source === 'pointbreak' && job.status === 'open').map(
-    (job) => ({
+  const postings = network.jobs
+    .filter((job) => job.source === 'pointbreak' && job.status === 'open')
+    .map((job) => ({
       job,
-      metrics: deriveMetrics(job, MOCK_EVENTS, MOCK_JOBS),
+      metrics: deriveMetrics(job, network.events, network.jobs),
       applications: applications.filter((a) => a.job_id === job.id)
-    })
-  );
+    }));
+
+  return { postings, source: network.source, demo: network.source === 'demo' };
 }
