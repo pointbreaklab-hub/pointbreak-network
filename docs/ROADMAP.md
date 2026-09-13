@@ -139,6 +139,20 @@ the tracker keeps a copy.
   voucher's GitHub-attested footprint, so vouch rings produce zero. Run
   `npm run scenario:attestation` for the worked example.
 
+## Phase 7: Identity and portfolio
+
+Specified in [PRD section 9](PRD.md). Nothing built. Three decisions marked OPEN
+there change the data model and should be settled first.
+
+- [ ] **7.1** Employment verification by corporate domain, with expiry turning a
+      lapsed badge into a dated employment record
+- [ ] **7.2** Company claiming, which falls out of 7.1 and is what makes the
+      company dashboard real rather than fixture-backed
+- [ ] **7.3** CV upload, parse and correct, publishing only redacted structure
+- [ ] **7.4** Portfolio themes: Series, Plain, Tinted, over one canonical format
+- [ ] **7.5** Visibility controls, blocked on the access-control decision
+- [ ] **7.6** Prerendered public portfolios, for search engines
+
 ## Not yet built
 
 - **3.4** Async encrypted inbox. UI renders; no key exchange, no polling, no

@@ -364,6 +364,191 @@ Entities:
   browsers block. Reserved for the future Tauri desktop app.
 - **No mobile app.** The web app is responsive, but no Capacitor or React Native
   builds.
-- **No domain-gated alumni reviews.** Verifying ex-employees by corporate email
-  domain is too complex for MVP. Company accountability rests on the math engine.
+- **No domain-gated alumni reviews.** Verifying *ex*-employees in order to
+  collect reviews about a company stays out of scope. Company accountability
+  rests on the math engine. Note this is narrower than it was: verifying your
+  own current employment is in scope as section 9.1, because it evidences a
+  person rather than gathering opinions about a company.
 - **No traditional backend.** No Express, Django, or Rails. No SQL.
+
+---
+
+# 9. Identity, portfolio and visibility
+
+Drafted, not built. The decisions marked **OPEN** change the data model, so they
+are cheaper to settle here than after there are real CVs in a public repository.
+
+## 9.1 Employment verification
+
+Send a code to an address at the employer's domain. Enter the code, get a badge.
+
+### What it proves, exactly
+
+That at a moment in time, someone controlled an address at that domain.
+
+It does **not** prove role, seniority, tenure, or that the person still works
+there. The badge must therefore read `verified @amazon.com, Sep 2026`, never
+"works at Amazon". A product whose whole argument is that claims should not be
+overstated cannot start overstating its own.
+
+### Expiry is the feature, not the problem
+
+People leave. A badge earned in 2026 means nothing in 2028, so verification is
+re-checked periodically and a lapse is not a failure.
+
+A lapsed badge becomes `verified @amazon.com, Jan 2024 to Sep 2026`, which is an
+employment record with dates. That is precisely what a CV asserts and normally
+cannot evidence, so the decayed state is more valuable than the fresh one.
+
+### The free-provider blocklist is the wrong shape
+
+Blocking gmail, hotmail and the rest is an endless list and wrong by default.
+The check should be an allowlist per company instead: does this domain appear in
+that company's record.
+
+```jsonc
+// companies/amazon.json
+{
+  "id": "amazon",
+  "name": "Amazon",
+  "domains": ["amazon.com", "amazon.de", "amazon.in", "amazon.co.uk"]
+}
+```
+
+Domains live in Git, so adding one is a pull request: publicly proposed,
+publicly reviewed, publicly logged. Pattern matching on `amazon.*` would accept
+`amazon.evil-tld`, and a global blocklist would still accept `amaz0n.com`.
+
+The badge shows the raw verified domain regardless, so a reader can judge a
+lookalike themselves rather than trusting our matching.
+
+Small companies on `@gmail.com` cannot get a badge. That is a real cost and the
+right trade: the badge means nothing if a free address earns it.
+
+Contractors verify their agency's domain, which is honest. The badge says where
+the mail came from, and nothing more.
+
+### The address is never published
+
+Store the domain, the verification date, and a salted hash. Never the local
+part, never the raw address.
+
+A public repository of work email addresses would be a spam and phishing
+resource, and it would be the single most harmful thing this project could
+publish. The hash exists only to detect one address verifying many accounts.
+
+### Abuse controls
+
+- Short-lived, single-use codes, compared in constant time.
+- Rate limited per address and per domain, so the flow cannot enumerate who
+  works somewhere.
+- Role accounts refused: `careers@`, `info@`, `hr@`, `admin@` and similar are
+  shared mailboxes, so control of one proves nothing about a person.
+- One pending verification per account at a time.
+
+### What it unlocks
+
+- **A non-social evidence path.** The engineer with no public repositories and
+  no colleague willing to vouch can still evidence fourteen years somewhere.
+  This is the answer to "what if nobody vouches".
+- **Company claiming**, which the company dashboard currently lacks entirely.
+  Whoever verifies at a company's domain can claim its profile, which is what
+  makes company-side accountability real rather than demonstration data.
+- **A usable "hiring manager" audience** for 9.3, with the caveat that a
+  verified domain proves employment, not authority to hire.
+
+### OPEN: sending the mail
+
+This needs a mail service, and it is a harder dependency than it looks.
+Deliverability, not code, is the difficulty: corporate mail servers filter
+unknown senders aggressively, and a verification code that lands in spam is a
+feature that does not work.
+
+Self-hosted SMTP is possible and delivers poorly without reputation. A
+transactional provider delivers well and is another third party. Decide which
+before building, given the project's position on outside dependencies.
+
+## 9.2 CV upload and portfolio
+
+A CV is parsed into one canonical structure, and themes render it.
+
+### Claimed against corroborated
+
+A CV is self-reported, and this product's entire argument is that self-reporting
+is not trusted. So a portfolio must visibly separate what is claimed from what
+is evidenced: a merged pull request, a vouch, a verified domain.
+
+This is the strongest part of the idea rather than a compromise. A resume where
+some lines carry evidence and the rest are marked as claims does not currently
+exist anywhere, and it makes the vouch request concrete: a colleague confirms
+one specific line rather than writing prose.
+
+### Themes
+
+One canonical JSON, several renderers, so a theme can never change the content.
+
+- **Series.** Companies as shows, roles as episodes, promotions as new seasons.
+  Do not name it after a streaming service in code, copy, or palette. Trademark
+  trouble is a foolish way to lose a project.
+- **Plain.** White, typographic, printable, the default.
+- **Tinted.** Plain with a user-chosen accent, validated for contrast so a
+  choice cannot render the page unreadable.
+
+A motion-heavy theme needs a `prefers-reduced-motion` fallback, and every theme
+needs to print.
+
+### OPEN: where a CV lives
+
+A CV holds a phone number, a home address, a personal email. The database is a
+public Git repository. There is no private storage anywhere in this
+architecture, and this is the blocker.
+
+1. Publish only the parsed, redacted structure and never the file. Simple, and
+   contact details cannot round-trip.
+2. Keep private profiles in the user's own private repository. They own it,
+   and discovery becomes harder.
+3. Encrypt per recipient. Strongest, and key management is real work.
+
+Whichever is chosen, personal contact details are stripped before anything is
+published, and the user sees exactly what will become public before it does.
+
+### OPEN: parsing
+
+PDF and DOCX to structured data is unreliable, and doing it client-side keeps
+the file off any server. An imperfect parse the user corrects is acceptable;
+silently mangling employment dates is not. Parse, then show the result for
+correction before anything is saved.
+
+## 9.3 Visibility
+
+Proposed: public, specific people, hiring managers, hidden.
+
+### OPEN: this is access control, and a static site over public data has none
+
+Three of those four states cannot be enforced by the current architecture. If
+the data is in a public repository, it is public, whatever the toggle says.
+
+The one thing that must not ship is a control that implies restriction and does
+not restrict, because people will put real data behind it.
+
+1. **Public or nothing.** Honest, enforceable today, and much less useful.
+2. **Private repo for restricted profiles.** GitHub enforces it. Sharing means
+   granting repository access, which is clumsy.
+3. **Encrypt, share keys with named recipients.** Real enforcement without a
+   server. Revocation means re-encrypting.
+4. **Gate reads behind the ledger service.** Familiar, and it makes the service
+   load-bearing for reading, which it currently is not.
+
+"Hiring managers" additionally needs that audience to be verifiable. 9.1 gets as
+far as proving employment, which is not the same as authority to hire.
+
+## 9.4 Discoverability
+
+Portfolios are the one part of this site with a real case for being indexed by
+search engines, and architectural rule 3 disables SSR, so they would ship as
+empty shells.
+
+Prerendering public portfolios at build time needs no server and keeps the rule
+intact. It does mean a build per published profile, which does not scale to many
+users on GitHub Pages. Worth solving when there are enough profiles for it to
+matter.
