@@ -486,6 +486,51 @@ the same address as a doctoral graduate, and so does the maintenance staff. The
 badge says `verified @mit.edu`, and the degree, field, class and graduation year
 stay unverified claims on the CV.
 
+### How domains are matched
+
+Two mechanisms, and the difference between them is who enforces eligibility.
+
+**Registry-enforced TLDs may be pattern matched.** Someone gates entry, so the
+pattern cannot be bought into: `.edu` by EDUCAUSE, `.ac.uk` by Jisc, `.edu.au`,
+`.ac.jp`. These can be accepted automatically and are how the list bootstraps
+without hand-entering thousands of institutions.
+
+**Naming conventions may not be, however consistent they look.** `uni-*.de` is
+the obvious German rule and it fails in both directions. It misses `tu-berlin.de`,
+`tum.de`, `rwth-aachen.de`, `lmu.de`, every `hs-` and `fh-` Hochschule, and
+`kit.edu`, which is a German institution holding a `.edu`.
+
+Worse, it is forgeable. DENIC applies no academic restriction to `.de`, so
+`uni-notreal.de` is available to anyone for a few euros a year, and a badge that
+a domain purchase can mint verifies nothing. The same holds for `.ca`, `.nl` and
+`.ch`. Germany has no enforced academic namespace at all.
+
+So country rules are a fast path where a registry backs them, and an explicit
+allowlist entry everywhere else.
+
+**Subdomains of an allowlisted registrable domain are accepted.** A real address
+looks like `roshan-kumar.gupta@stud-mail.uni-wuerzburg.de`, so matching only the
+exact domain would need an entry per mail host. The record holds
+`uni-wuerzburg.de` and any subdomain under it verifies.
+
+**Student and staff can sometimes be told apart, and should be where possible.**
+Würzburg puts students on `stud-mail.` and staff on the bare domain. Where an
+institution separates them, record it and let the badge say *student* rather
+than merely *affiliated*:
+
+```jsonc
+{
+  "id": "uni-wuerzburg",
+  "name": "Universität Würzburg",
+  "domains": ["uni-wuerzburg.de"],
+  "student_subdomains": ["stud-mail"]
+}
+```
+
+This is not universal and cannot be relied on, but it costs nothing where it
+exists and it is the only way to distinguish a student from the facilities team
+without registrar integration.
+
 One domain registry serves both, since a university is also an employer. The
 record carries the domains; the user states whether they studied or worked
 there; the badge shows the claim and the verified domain side by side. Someone
