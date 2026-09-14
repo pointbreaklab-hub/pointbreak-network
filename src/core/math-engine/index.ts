@@ -12,6 +12,18 @@ export {
   DISPUTE_RATE
 } from './ghost-score';
 
+export {
+  deriveCompanyMetrics,
+  scoreCompany,
+  scoreAllCompanies,
+  companyBandFor,
+  COMPANY_BANDS,
+  COMPANY_BAND_LABELS,
+  MIN_COMPANY_SAMPLE,
+  STALE_POSTING_DAYS,
+  SLOW_RESPONSE_DAYS
+} from './company-score';
+
 export { detect, detectAll, squadSizes, BLACK_HOLE_AFTER_DAYS } from './black-hole';
 
 export {

@@ -15,7 +15,8 @@
     "server": "tsx server/src/node.ts",
     "server:check": "tsc -p server/tsconfig.json",
     "server:dev": "tsx watch server/src/node.ts",
-    "keygen": "tsx scripts/keygen.ts"
+    "keygen": "tsx scripts/keygen.ts",
+    "scenario:company": "tsx scripts/company-scenario.ts"
   },
   "dependencies": {
     "@noble/ed25519": "^2.1.0",

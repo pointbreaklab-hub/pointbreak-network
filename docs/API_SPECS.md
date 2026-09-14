@@ -307,6 +307,33 @@ reports is not presented as if it were built on three hundred.
 `inflated_claims` needs both thresholds. One angry candidate disputing one
 rejection must not be able to move a company's score.
 
+### Company rating: `src/core/math-engine/company-score.ts`
+
+Aggregated across every posting a company has, rather than per posting, because
+that is the question people ask and because it needs far fewer reports before it
+means anything.
+
+| Delta | Rule id | Condition |
+|---|---|---|
+| +25 | `rarely_responds` | Under 25% of tracked applicants heard anything |
+| +20 | `majority_ignored` | Over half never heard back |
+| +15 | `slow_when_they_do` | Median over 21 days to a first reply |
+| +20 | `serial_stale` | More than 2 postings open over 60 days with nothing confirmed |
+| +15 | `inflated_claims` | 3 or more disputes, over 20% of claims |
+| -20 | `responsive` | 75% or more heard back |
+| -10 | `fast` | Median 7 days or less |
+
+Bands: Responsive `<30`, Patchy `30-59`, Black hole `>=60`.
+
+**Below 5 tracked applications a company is reported as unmeasured**, never as
+good or bad. A damning figure drawn from two reports would be misleading, and
+sample size is shown beside every rating.
+
+"Heard back" means the candidate confirmed the company did something. A claim
+nobody confirmed does not count and does not stop the clock, so a recruiter
+cannot improve this by marking work as done. An application being submitted is
+the candidate acting and never counts as a response.
+
 ### Black Hole: `src/core/math-engine/black-hole.ts`
 
 ```jsonc

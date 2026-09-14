@@ -168,6 +168,22 @@ there change the data model and should be settled first.
       crawler that does not run JavaScript sees nothing. Fixing that needs a
       build per profile
 
+## Company-level transparency
+
+Added because the goal is company accountability, and per-posting scoring is the
+wrong granularity for it. A per-posting score needs several people on the same
+job, which is rare. Aggregating by company needs several people at the same
+employer, which is common, so it works at roughly a hundredth of the users.
+
+- [x] Company metrics derived from the ledger, aggregated across every posting
+- [x] Company rating with a flat rule table, unmeasured below 5 reports
+- [x] Public leaderboard at `/companies`, readable signed out
+- [x] Company detail at `/companies/<id>` with the full rule breakdown
+- [ ] Time series, so a company improving is visible rather than just its
+      current state
+- [ ] Company response to a rating: dispute with evidence, which is also the
+      acquisition channel
+
 ## Not yet built
 
 - **3.4** Async encrypted inbox. UI renders; no key exchange, no polling, no

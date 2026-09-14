@@ -12,6 +12,16 @@
   <a href="{base}/" class="font-semibold tracking-tight">pointbreak</a>
 
   <ul class="flex gap-4">
+    <!-- Public, unlike the extension routes, so it sits outside the registry. -->
+    <li>
+      <a
+        href="{base}/companies"
+        class="text-muted hover:text-fg aria-[current=page]:text-fg"
+        aria-current={$page.url.pathname.startsWith(`${base}/companies`) ? 'page' : undefined}
+      >
+        Companies
+      </a>
+    </li>
     {#each items as item (item.path)}
       <li>
         <a

@@ -204,6 +204,45 @@ export interface ScoreRule {
 
 export type GhostBand = 'active' | 'evergreen' | 'ghost';
 
+/**
+ * A company aggregated across every posting it has.
+ *
+ * This is the unit that makes company transparency reachable: a per-posting
+ * score needs several people on the same job, which is rare, while this needs
+ * several people at the same employer, which is common.
+ */
+export interface CompanyMetrics {
+  company_id: string;
+  applications: number;
+  /** Applications where the candidate confirmed at least one company action. */
+  responded: number;
+  never_responded: number;
+  response_rate: number;
+  /** Null when nobody has ever heard back, which is itself the finding. */
+  median_days_to_response: number | null;
+  interviews_attested: number;
+  rejections_attested: number;
+  claims_total: number;
+  claims_disputed: number;
+  open_postings: number;
+  stale_postings: number;
+  total_postings: number;
+}
+
+export interface CompanyScore {
+  company_id: string;
+  score: number;
+  band: GhostBand;
+  /**
+   * False when too few applications have been tracked to say anything. An
+   * unmeasured company is reported as unmeasured, never as good or bad.
+   */
+  measured: boolean;
+  sample: number;
+  breakdown: ScoreRule[];
+  metrics: CompanyMetrics;
+}
+
 export interface GhostScore {
   job_id: string;
   score: number;
