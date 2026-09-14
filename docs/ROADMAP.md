@@ -157,9 +157,12 @@ there change the data model and should be settled first.
       toward skill
 - [ ] **7.2** Company claiming, which falls out of 7.1 and is what makes the
       company dashboard real rather than fixture-backed
-- [ ] **7.3** CV upload, parse and correct, publishing only redacted structure
-- [ ] **7.4** Portfolio themes: Series, Plain, Tinted, over one canonical format
-- [ ] **7.5** Visibility controls, blocked on the access-control decision
+- [x] **7.3** CV upload, parse and correct. Parsed in the browser, file never
+      uploaded, contact details stripped before storage
+- [x] **7.4** Portfolio themes: Series, Plain, Tinted, over one canonical format
+- [~] **7.5** Visibility. Public and hidden are enforceable and work. Specific
+      people and hiring managers are shown disabled with the reason, because a
+      static page over a public repo cannot enforce them
 - [ ] **7.6** Prerendered public portfolios, for search engines
 
 ## Not yet built

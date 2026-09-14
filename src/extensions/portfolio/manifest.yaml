@@ -1,0 +1,20 @@
+id: portfolio
+name: Portfolio
+version: 0.1.0
+enabled: true
+description: A CV rendered as a web page, parsed in the browser and stored locally until published.
+
+routes:
+  - path: /app/portfolio
+    component: components/PortfolioView.svelte
+    nav:
+      label: Portfolio
+      icon: file
+      order: 45
+
+permissions:
+  - db:portfolios:read
+  - db:portfolios:write
+
+requires:
+  core: '>=0.1.0'

@@ -12,6 +12,7 @@
  */
 
 import Dexie, { type Table } from 'dexie';
+import type { Portfolio } from '$lib/portfolio';
 import type { ApplicationRef, Job, LedgerEvent, MessageRequest, Receipt, UserProfile } from '$lib/types';
 
 export interface CacheMeta {
@@ -38,17 +39,20 @@ export class PointBreakDB extends Dexie {
   receipts!: Table<Receipt, string>;
   messages!: Table<MessageRequest, string>;
   myApplications!: Table<MyApplication, ApplicationRef>;
+  /** Private until explicitly published. A CV holds personal data. */
+  portfolios!: Table<Portfolio, string>;
   meta!: Table<CacheMeta, string>;
 
   constructor() {
     super('pointbreak');
-    this.version(2).stores({
+    this.version(3).stores({
       jobs: 'id, company_id, status, source, first_seen_at',
       events: 'id, job_id, application_ref, action, at',
       profiles: 'github_login',
       receipts: 'id, subject, kind',
       messages: 'thread_id, to, sent_at',
       myApplications: 'application_ref, job_id, created_at',
+      portfolios: 'github_login',
       meta: 'key'
     });
   }
@@ -70,6 +74,8 @@ export async function markFresh(key: string, etag?: string): Promise<void> {
 /** Clears cached public data. Deliberately leaves myApplications alone. */
 export async function clearCache(): Promise<void> {
   await Promise.all(
+    // portfolios are deliberately excluded: they are the user's own work, not
+    // a cache of something fetchable.
     [db.jobs, db.events, db.profiles, db.receipts, db.messages, db.meta].map((t) => t.clear())
   );
 }
