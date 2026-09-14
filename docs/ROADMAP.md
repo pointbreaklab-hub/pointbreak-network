@@ -160,10 +160,13 @@ there change the data model and should be settled first.
 - [x] **7.3** CV upload, parse and correct. Parsed in the browser, file never
       uploaded, contact details stripped before storage
 - [x] **7.4** Portfolio themes: Series, Plain, Tinted, over one canonical format
-- [~] **7.5** Visibility. Public and hidden are enforceable and work. Specific
-      people and hiring managers are shown disabled with the reason, because a
-      static page over a public repo cannot enforce them
-- [ ] **7.6** Prerendered public portfolios, for search engines
+- [x] **7.5** Visibility. Public and hidden are enforceable end to end: public
+      writes `users/<login>/portfolio.json`, hidden removes it. Specific people
+      and hiring managers stay disabled with the reason shown
+- [~] **7.6** Public portfolio pages at `/u/<login>`, readable signed out. Not
+      prerendered, so title and description are set after hydration and a
+      crawler that does not run JavaScript sees nothing. Fixing that needs a
+      build per profile
 
 ## Not yet built
 

@@ -6,7 +6,7 @@
     type ThemeId,
     type Visibility
   } from '$lib/portfolio';
-  import { accentPalette, MIN_TEXT_CONTRAST } from '../contrast';
+  import { accentPalette, MIN_TEXT_CONTRAST } from '$lib/contrast';
   import {
     createPortfolio,
     deletePortfolio,
@@ -17,9 +17,9 @@
   } from '../data';
   import { extractText, parseCv } from '../parse';
   import Editor from './Editor.svelte';
-  import Plain from './themes/Plain.svelte';
-  import Series from './themes/Series.svelte';
-  import Tinted from './themes/Tinted.svelte';
+  import Plain from '$lib/themes/Plain.svelte';
+  import Series from '$lib/themes/Series.svelte';
+  import Tinted from '$lib/themes/Tinted.svelte';
 
   let portfolio = $state<Portfolio | null>(null);
   let loading = $state(true);

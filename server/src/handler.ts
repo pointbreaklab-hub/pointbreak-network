@@ -78,6 +78,12 @@ export function createHandler(config: Config, store: Store) {
         case 'POST /attest':
           return await attest(request, config, store);
 
+        case 'POST /portfolio':
+          return await publishPortfolio(request, config);
+
+        case 'DELETE /portfolio':
+          return await unpublishPortfolio(request, config);
+
         default:
           return json({ error: 'not_found' }, config, 404);
       }
@@ -315,6 +321,82 @@ async function attest(request: Request, config: Config, store: Store): Promise<R
   return json({ ok: true }, config);
 }
 
+/* ---------- Portfolio ---------- */
+
+const MAX_PORTFOLIO_BYTES = 256 * 1024;
+
+/** Rejected outright rather than stripped, so nobody is surprised later. */
+const CONTACT_PATTERNS: Array<[RegExp, string]> = [
+  [/\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b/, 'an email address'],
+  [/\+?\d[\d\s().\-/]{8,}\d/, 'what looks like a phone number']
+];
+
+/**
+ * Publishes a portfolio to `users/<login>/portfolio.json`.
+ *
+ * Identity is the point here, unlike the ledger: it is published under the
+ * person's own name, so this authenticates and uses that login for the path
+ * rather than trusting a field in the body. A caller must not be able to
+ * publish to someone else's path.
+ */
+async function publishPortfolio(request: Request, config: Config): Promise<Response> {
+  const body = await request.text();
+  if (body.length > MAX_PORTFOLIO_BYTES) throw new HttpError('portfolio_too_large', 413);
+
+  const portfolio = JSON.parse(body) as { visibility?: string; github_login?: string };
+  if (portfolio.visibility !== 'public') {
+    throw new HttpError('not_public: only a public portfolio can be published', 400);
+  }
+
+  const user = await identify(request);
+  assertOldEnough(user, config);
+
+  // The client strips contact details before storing. Checking again here means
+  // a modified client cannot put a home address into a public repository, where
+  // it would live in the history permanently even after deletion.
+  for (const [pattern, description] of CONTACT_PATTERNS) {
+    if (pattern.test(body)) {
+      throw new HttpError(
+        `contact_details_present: this contains ${description}, which must not be published`,
+        400
+      );
+    }
+  }
+
+  const path = `users/${user.login.toLowerCase()}/portfolio.json`;
+  const stored = JSON.stringify(
+    { ...portfolio, github_login: user.login, published_at: new Date().toISOString() },
+    null,
+    2
+  );
+
+  await writeFile(config, path, stored + '\n', `portfolio: publish ${user.login}`);
+  return json({ ok: true, path }, config);
+}
+
+/**
+ * Removes a published portfolio.
+ *
+ * The file stops being served, and the content remains in the Git history
+ * forever, which the client says plainly before anyone publishes.
+ */
+async function unpublishPortfolio(request: Request, config: Config): Promise<Response> {
+  const user = await identify(request);
+  const path = `users/${user.login.toLowerCase()}/portfolio.json`;
+
+  const existing = await getFile(config, path);
+  if (!existing) return json({ ok: true, already_absent: true }, config);
+
+  const res = await fetch(`${GITHUB_API}/repos/${config.dataRepo}/contents/${path}`, {
+    method: 'DELETE',
+    headers: githubHeaders(config),
+    body: JSON.stringify({ message: `portfolio: unpublish ${user.login}`, sha: existing.sha })
+  });
+
+  if (!res.ok) throw new HttpError(`git_delete_failed: ${res.status}`, 502);
+  return json({ ok: true }, config);
+}
+
 /* ---------- Git append ---------- */
 
 /**
@@ -353,6 +435,28 @@ async function appendLine(
   }
 
   throw new HttpError('git_write_conflict: too many concurrent writers', 503);
+}
+
+/** Whole-file write, unlike appendLine which is read-modify-append. */
+async function writeFile(
+  config: Config,
+  path: string,
+  content: string,
+  message: string
+): Promise<void> {
+  const existing = await getFile(config, path);
+
+  const res = await fetch(`${GITHUB_API}/repos/${config.dataRepo}/contents/${path}`, {
+    method: 'PUT',
+    headers: githubHeaders(config),
+    body: JSON.stringify({
+      message,
+      content: Buffer.from(content, 'utf8').toString('base64'),
+      ...(existing ? { sha: existing.sha } : {})
+    })
+  });
+
+  if (!res.ok) throw new HttpError(`git_write_failed: ${res.status} ${await res.text()}`, 502);
 }
 
 async function getFile(

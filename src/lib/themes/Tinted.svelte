@@ -1,6 +1,6 @@
 <script lang="ts">
   import { formatSpan, type Portfolio } from '$lib/portfolio';
-  import { accentPalette } from '../../contrast';
+  import { accentPalette } from '$lib/contrast';
   import EvidenceTag from './EvidenceTag.svelte';
 
   let { portfolio }: { portfolio: Portfolio } = $props();

@@ -193,6 +193,23 @@ parameter does not work. Another person's write can therefore take up to five
 minutes to appear. Your own writes are unaffected, since they are read from
 IndexedDB first.
 
+## `users/<login>/portfolio.json`
+
+A published portfolio. Written only by the ledger service, which takes the login
+from the authenticated caller rather than from the body, so nobody can publish
+to someone else's path.
+
+The service refuses a payload that still contains an email address or anything
+resembling a phone number. The client strips them before storing, and this is
+the second check: a modified client must not be able to put a home address into
+a public repository, where it would remain in the history even after deletion.
+
+Readable from `raw.githubusercontent.com` without a token, because a shared
+portfolio link has to work for someone with no account.
+
+Removing one deletes the file. The content stays in the Git history, which the
+client states before anyone publishes.
+
 ## Peer attestations
 
 Appended to `attestations/<subject_login>.jsonl`, one per line, append only.
