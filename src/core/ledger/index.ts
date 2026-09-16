@@ -23,7 +23,9 @@
 
 import { session } from '$core/auth/session.svelte';
 import { db } from '$core/db';
+import { decryptBackup, encryptBackup, isEncryptedBackup } from '$lib/backup';
 import type { LedgerAction, LedgerEvent } from '$lib/types';
+import { ledgerDate } from '$lib/utils';
 
 const LEDGER_URL = import.meta.env.PUBLIC_LEDGER_URL ?? '';
 export const PUBLISHING_ENABLED = import.meta.env.PUBLIC_PUBLISH_LEDGER === 'true';
@@ -124,7 +126,9 @@ function makeEvent(input: AppendInput): LedgerEvent {
     job_id: input.job_id,
     application_ref: input.application_ref,
     action: input.action,
-    at: new Date().toISOString(),
+    // A date, not a moment. See ledgerDate: an exact arrival time is enough to
+    // match a pseudonymous ref against a company's own inbox.
+    at: ledgerDate(),
     actor: 'candidate',
     ref_event: input.ref_event
   };
@@ -178,21 +182,38 @@ export async function localEvents(): Promise<LedgerEvent[]> {
 /**
  * Local data is the only copy in this mode, so it has to be removable from the
  * app rather than trapped in it.
+ *
+ * Always encrypted, never optionally. What comes out is the private half of the
+ * whole design: the map from each pseudonymous application_ref to the job and
+ * employer behind it. Published as plaintext into a downloads folder it would
+ * deanonymise every event this person ever appended, so the file is ciphertext
+ * and the passphrase never leaves the browser. See $lib/backup.
  */
-export async function exportLocalData(): Promise<string> {
+export async function exportLocalData(passphrase: string): Promise<string> {
   const [events, applications] = await Promise.all([
     db.events.toArray(),
     db.myApplications.toArray()
   ]);
 
-  return JSON.stringify(
-    { version: 1, exported_at: new Date().toISOString(), events, applications },
-    null,
-    2
+  return encryptBackup(
+    JSON.stringify({ version: 1, exported_at: new Date().toISOString(), events, applications }),
+    passphrase
   );
 }
 
-export async function importLocalData(json: string): Promise<{ events: number; applications: number }> {
+/**
+ * Reads a backup produced by exportLocalData.
+ *
+ * Plaintext files are still accepted, because exports written before encryption
+ * existed are real files on real disks and refusing them would strand somebody's
+ * only copy. Nothing new is ever written in that form.
+ */
+export async function importLocalData(
+  text: string,
+  passphrase = ''
+): Promise<{ events: number; applications: number }> {
+  const json = isEncryptedBackup(text) ? await decryptBackup(text, passphrase) : text;
+
   const parsed = JSON.parse(json) as {
     events?: LedgerEvent[];
     applications?: Array<Record<string, unknown>>;

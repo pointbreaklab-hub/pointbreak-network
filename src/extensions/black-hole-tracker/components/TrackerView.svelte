@@ -2,18 +2,15 @@
   import { session } from '$core/auth/session.svelte';
   import { db } from '$core/db';
   import { BLACK_HOLE_AFTER_DAYS, detectAll, projectAll } from '$core/math-engine';
-  import {
-    appendEvent,
-    exportLocalData,
-    PUBLISHING_ENABLED,
-    type AppendInput
-  } from '$core/ledger';
+  import { appendEvent, PUBLISHING_ENABLED, type AppendInput } from '$core/ledger';
   import { companyIdFromUrl, mintApplicationRef, normalizeJobUrl } from '$lib/identity';
   import type { LedgerEvent } from '$lib/types';
+  import { ledgerDate } from '$lib/utils';
   import DemoNotice from '$core/layout/DemoNotice.svelte';
   import type { NetworkSource } from '$core/network';
   import { loadTracker } from '../data';
   import ApplicationStatus from './ApplicationStatus.svelte';
+  import Backup from './Backup.svelte';
 
   let events = $state<LedgerEvent[]>([]);
   let myRefs = $state<string[]>([]);
@@ -28,7 +25,11 @@
   let formError = $state<string | null>(null);
   let writeError = $state<string | null>(null);
 
-  $effect(() => {
+  /**
+   * Deliberately not toggling `loading` back on: a refresh after a restore
+   * should fill the table in place rather than blank it.
+   */
+  function refresh() {
     const login = session.current?.github_login;
     if (!login) return;
 
@@ -42,7 +43,9 @@
       })
       .catch((e: unknown) => (error = e instanceof Error ? e.message : 'Could not read the ledger.'))
       .finally(() => (loading = false));
-  });
+  }
+
+  $effect(refresh);
 
   const all = $derived(projectAll(events));
   const mine = $derived(all.filter((a) => myRefs.includes(a.application_ref)));
@@ -61,17 +64,6 @@
     } catch (e) {
       writeError = e instanceof Error ? e.message : 'Could not record that.';
     }
-  }
-
-  function download() {
-    void exportLocalData().then((json) => {
-      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `pointbreak-tracker-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
   }
 
   function attest(claim: LedgerEvent, verdict: 'confirmed' | 'disputed') {
@@ -118,7 +110,7 @@
       job_title: title.trim() || `${company} posting`,
       company_id: company,
       source_url: normalized,
-      created_at: new Date().toISOString()
+      created_at: ledgerDate()
     });
 
     void append({ job_id: jobId, application_ref: ref, action: 'application_submitted' });
@@ -130,7 +122,7 @@
   const field = 'rounded-md border border-edge bg-elevated px-2.5 py-1.5 text-fg';
 </script>
 
-<div class="mb-5 flex items-start justify-between gap-4">
+<div class="mb-5 flex flex-wrap items-start justify-between gap-4">
   <div class="max-w-3xl">
     <h1 class="text-lg font-medium">Black Hole Tracker</h1>
     <p class="mt-1 text-sm text-muted">
@@ -139,13 +131,7 @@
       papered over by a recruiter marking work as done.
     </p>
   </div>
-  <button
-    type="button"
-    onclick={download}
-    class="shrink-0 rounded-md border border-edge px-3 py-1.5 text-sm text-muted hover:text-fg"
-  >
-    Export
-  </button>
+  <Backup onimported={refresh} />
 </div>
 
 <DemoNotice {source} {demo} />
@@ -155,7 +141,8 @@
     <strong class="text-fg">Stored on this device only.</strong>
     Nothing you log here is published, so squad counts and company scores come from the
     demonstration data below rather than from other real people. Export keeps a copy, because
-    clearing site data would otherwise lose it.
+    clearing site data would otherwise lose it, encrypted with a passphrase because that copy is
+    the one thing that links these applications back to you.
   </p>
 {/if}
 

@@ -13,7 +13,7 @@
 
 import type { Job, LedgerEvent } from './types';
 
-const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 
 /** Refs the fixture treats as belonging to the signed-in user. */
 export const MY_REFS = [

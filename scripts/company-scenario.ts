@@ -12,7 +12,7 @@ import { deriveCompanyMetrics, scoreCompany } from '../src/core/math-engine/comp
 import { COMPANY_BAND_LABELS } from '../src/core/math-engine/company-score';
 import type { Job, LedgerEvent } from '../src/lib/types';
 
-const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 let seq = 0;
 const id = () => `ev_${++seq}`;
 

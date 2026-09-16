@@ -37,8 +37,14 @@ Correlating issuance with append would mean logging across requests. It does
 not, and you are reading the source.
 
 That is an operational promise, not a cryptographic one. The honest mitigation
-is that you run it yourself, so the only party you trust is you. The real fix is
-a blind signature scheme, where the signer cannot recognise the token it signed.
+is that you run it yourself, so the only party you trust is you. The fix is
+blind tokens, where the signer cannot recognise the token it signed, and that is
+the next thing being built here: the protocol, and the four things it does *not*
+fix, are written up in [PRD section 4c](../docs/PRD.md).
+
+Timestamps written to the ledger are a UTC date with no time of day. Every
+derived number is measured in days, and an exact arrival time is enough to match
+a pseudonymous ref against an employer's own applicant inbox.
 
 ## Running it
 

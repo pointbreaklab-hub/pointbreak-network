@@ -53,10 +53,20 @@ export async function signReceipt(
   return { ...receipt, signature: toBase64(sig) };
 }
 
+/**
+ * Chunked rather than one spread call: `String.fromCharCode(...bytes)` passes
+ * every byte as an argument, which overflows the call stack somewhere around a
+ * hundred kilobytes. Receipts are tiny, but encrypted backups are not.
+ */
 export function toBase64(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes));
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
 }
 
-export function fromBase64(value: string): Uint8Array {
+export function fromBase64(value: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
 }

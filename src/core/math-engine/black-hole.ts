@@ -19,7 +19,12 @@ export const BLACK_HOLE_AFTER_DAYS = 14;
 const SILENT_STATES: TrackedState[] = ['submitted', 'viewed'];
 
 export function detect(application: Application, squadSize?: number): BlackHoleState {
-  const daysSilent = Math.round(daysBetween(application.last_action_at));
+  // Floor, not round, because ledger timestamps are dates: the recorded day
+  // starts at midnight while the event happened at some unknown hour within it,
+  // so rounding would routinely count a partial day as a whole one. Flooring
+  // reports the days that have certainly passed, and lands the 14-day threshold
+  // where precise timestamps used to put it.
+  const daysSilent = Math.floor(daysBetween(application.last_action_at));
   const isBlackHole =
     SILENT_STATES.includes(application.status) && daysSilent > BLACK_HOLE_AFTER_DAYS;
 

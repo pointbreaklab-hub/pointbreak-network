@@ -27,8 +27,10 @@
  *
  * That is an operational promise rather than a cryptographic one. The real fix
  * is a blind signature scheme, where the signer cannot recognise the token it
- * signed. Until then, running this yourself is the mitigation: the only party
- * you have to trust is you.
+ * signed, and it is the next thing to build here: the protocol, what it does
+ * and does not close, and why unlinkable tokens alone are not enough are all
+ * written up in docs/PRD.md section 4c. Until then, running this yourself is
+ * the mitigation: the only party you have to trust is you.
  */
 
 import type { Store } from './store.js';
@@ -261,8 +263,10 @@ async function append(request: Request, config: Config, store: Store): Promise<R
     job_id: event.job_id,
     application_ref: event.application_ref,
     action: event.action,
-    // Server time. A client-supplied timestamp could backdate silence.
-    at: new Date().toISOString(),
+    // Server-stamped, because a client-supplied time could backdate silence,
+    // and to the day rather than the moment, because an exact arrival time
+    // deanonymises the ref it is attached to. See ledgerDate.
+    at: ledgerDate(),
     actor: 'candidate',
     ...(event.ref_event ? { ref_event: event.ref_event } : {})
   });
@@ -502,6 +506,22 @@ function timingSafeEqual(a: string, b: string): boolean {
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
+}
+
+/**
+ * Ledger timestamps are a UTC date, never a moment.
+ *
+ * Every derived number is measured in whole days, so precision buys no
+ * accuracy, and it costs the thing the pseudonym exists to protect: a company
+ * holding its own applicant inbox can match exact arrival times against a
+ * public ledger and put a name to each application_ref. A date is matched by
+ * everyone who applied that day, which is the point.
+ *
+ * The client coarsens its own copy identically, but this is the stamp that
+ * reaches the public repository, so this is the one that has to be right.
+ */
+function ledgerDate(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function monthStamp(): string {

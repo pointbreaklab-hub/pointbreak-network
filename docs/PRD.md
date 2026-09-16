@@ -215,7 +215,11 @@ narrows that trust rather than hiding it:
 - **The guard store holds no plaintext.** Sybil keys are HMACs of
   account and job, so a dump of the namespace identifies nobody.
 - **Timestamps are server-stamped**, since a client-supplied time could backdate
-  silence.
+  silence, **and recorded as a date rather than a moment**. Every derived number
+  is measured in whole days, so precision buys no accuracy, and it costs the
+  pseudonym: an employer holding its own applicant inbox can match exact arrival
+  times against the public ledger and put a name to each ref. A date is matched
+  by everyone who applied that day.
 - **Candidates cannot append company claims.** The append route rejects any
   company action outright, so nobody can credit a company on its behalf, or
   frame one.
@@ -311,6 +315,88 @@ hide the attempt.
 Abuse controls: you cannot vouch for yourself, one vouch per person per skill,
 and the same account age bar applies.
 
+## 4c. Blind append tokens
+
+The next thing to build. It closes the last place where privacy rests on a
+promise rather than on arithmetic.
+
+### The gap it closes
+
+Today `POST /ledger/token` learns a login and a job. `POST /ledger/append`
+learns a ref and an event. Neither learns both, so the service can only
+deanonymise someone by remembering the first request and matching it to the
+second. It does not do that, and the code is here to read, but "it does not"
+is a promise about behaviour. A breach, a subpoena, or a different operator
+replaces the promise with nothing.
+
+A blind signature removes the option. The service signs a token it cannot
+recognise when it comes back, so correlation stops being forbidden and starts
+being impossible.
+
+### The scheme
+
+A verifiable oblivious pseudorandom function, RFC 9497, in the privately
+verifiable arrangement of Privacy Pass. Issuer and verifier are the same
+service here, so the simpler private variant is enough and the heavier blind
+RSA construction buys nothing.
+
+1. The client picks a random token input `t` and blinds it to `B`. Blinding
+   hides `t` unconditionally: `B` carries no information about it.
+2. `POST /ledger/token` sends `B` with the job id, authenticated as today. The
+   service checks account age, the one-per-posting guard and the monthly
+   budget, then evaluates `Z = Evaluate(k, B)` under its secret key and returns
+   `Z` with a DLEQ proof that it used the key its public key names.
+3. The client verifies the proof and unblinds to `token = Finalize(t, Z)`,
+   which equals `PRF(k, t)`.
+4. `POST /ledger/append` sends `t`, `token` and the event, unauthenticated. The
+   service recomputes `PRF(k, t)`, compares, and rejects a spent `t`.
+
+The proof in step 2 matters: without it the service could sign one person's
+token under a unique key and recognise them at redemption, which is the attack
+blinding is supposed to prevent.
+
+`@noble/curves` implements what this needs, by the author of the `@noble/ed25519`
+already used for receipts. Audited, MIT, no service behind it.
+
+### What it does not fix, stated plainly
+
+Unlinkable tokens alone are theatre. Four things survive them, and the first
+two are the reason this is a protocol change rather than a library swap.
+
+- **The issuance record.** One token per account per posting is the sybil
+  guard, and it requires the service to learn that this account acted on this
+  posting. Blinding hides *which* ref is yours; it cannot hide that you are
+  among the people who applied there. The anonymity set is the applicants to
+  that one posting, not the whole network.
+- **Timing.** Redeeming a token seconds after issuing it relinks the two
+  regardless of the mathematics. Tokens must be fetched ahead of time, held,
+  and spent later, which means the client keeps a small pool rather than
+  requesting one per action.
+- **Network metadata.** The same IP address on both requests is a link. The
+  service must not log addresses, and that is again an operational promise,
+  just a much narrower one than today's.
+- **Key epochs.** Rotating the signing key partitions users by epoch, so
+  rotation has to be rare and scheduled rather than reactive.
+
+### The tradeoff, and the call
+
+The anonymity set could be widened by scoping tokens to a time period instead
+of a posting, which would let one account spend its budget anywhere. That trades
+away the strongest sybil guard in the system, and the guard protects the most
+visible number in the product.
+
+Keep the per-posting scope. The adversary this design fears most is the
+employer reading the public ledger, and an employer already knows who applied
+to its own posting, so the per-posting anonymity set costs that adversary
+nothing it did not already have. The adversary the wider set would protect
+against is the service operator, and self-hosting already answers that one.
+
+### Scope
+
+Phase 8 in [ROADMAP.md](ROADMAP.md). It touches the token routes, adds a client
+side token pool, and changes nothing about the ledger format, the scores, or
+any read path.
+
 ## 5. Data flow and state management
 
 - **Source of truth.** GitHub repositories holding JSON/JSONL.
@@ -341,6 +427,10 @@ Entities:
 - **Attested actions only.** A company cannot credit itself. See section 4a.
 - **Client-side encryption.** Message contents are encrypted in the browser
   before being pushed. GitHub stores ciphertext only.
+- **Encrypted local backups.** A tracker export is the private map from every
+  pseudonymous ref to the job behind it, so it is written as ciphertext or not
+  at all: PBKDF2-HMAC-SHA256 into AES-256-GCM, passphrase never leaving the
+  browser, no recovery path. See `src/lib/backup.ts`.
 - **No secrets in the frontend.** Payment keys and OAuth client secrets never
   appear in the Svelte codebase. Payments route through the ledger service, and Device
   Flow needs no client secret.

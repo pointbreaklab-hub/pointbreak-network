@@ -100,7 +100,7 @@ lines are never edited or deleted.
   "job_id": "job_01J8X…",
   "application_ref": "app_9f2c4b17e3a85d0c6f1b2e7a4d8c3059",
   "action": "resume_viewed",
-  "at": "2026-08-03T11:20:00Z",
+  "at": "2026-08-03",                 // a UTC date, never a moment
   "actor": "company",
   "ref_event": null                   // set on claim_confirmed / claim_disputed
 }
@@ -126,6 +126,22 @@ not receive. Company claims are worth nothing until the candidate they name
 confirms them, and an unconfirmed claim **does not reset the Black Hole clock**.
 A dispute always beats a confirmation on the same event.
 
+### Timestamps
+
+`at` is a UTC date with no time of day, on every ledger line, stamped by the
+service rather than the client.
+
+Server-stamped because a client-supplied time could backdate silence. Date-only
+because every number derived from the ledger is measured in whole days, so a
+precise time adds no accuracy while costing the pseudonym: an employer holding
+its own applicant inbox can line exact arrival times up against the public
+ledger and put a name to each `application_ref`. A date is shared by everyone
+who applied that day.
+
+Consumers should treat a day as the smallest unit that exists here. Days of
+silence are floored, not rounded, because the recorded day begins at midnight
+while the event happened at some unknown hour inside it.
+
 ### `application_ref`
 
 128 random bits minted in the browser, never derived from a GitHub login. The
@@ -149,8 +165,8 @@ stored.
   "job_id": "job_01J8X…",
   "application_ref": "app_9f2c4b17e3a85d0c6f1b2e7a4d8c3059",
   "status": "viewed",   // submitted | viewed | interviewing | rejected | offer | withdrawn
-  "submitted_at": "2026-08-01T09:00:00Z",
-  "last_action_at": "2026-08-03T11:20:00Z",
+  "submitted_at": "2026-08-01",
+  "last_action_at": "2026-08-03",
   "pending_claims": []  // company claims awaiting this candidate's attestation
 }
 ```

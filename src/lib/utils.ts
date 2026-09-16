@@ -34,6 +34,25 @@ export function relativeTime(date: string | Date): string {
   return rtf.format(-Math.round(days / 30), 'month');
 }
 
+/**
+ * The timestamp granularity of everything this app writes to the ledger: a UTC
+ * date, never a moment.
+ *
+ * Every number derived from the ledger is measured in whole days, so a
+ * millisecond buys no accuracy at all. It does cost pseudonymity. An
+ * application_ref is random and unlinkable, but an exact arrival time is not:
+ * a company with a dozen applicants can line the ledger up against its own
+ * inbox and put a name to each ref, and the more precise the stamp the fewer
+ * candidates it could possibly be. A date cannot be matched that way, because
+ * many people applied that day.
+ *
+ * The day is UTC, so someone applying late in the evening east of Greenwich is
+ * recorded on the following date. That is a feature of the same blurring.
+ */
+export function ledgerDate(at: Date = new Date()): string {
+  return at.toISOString().slice(0, 10);
+}
+
 /** Sortable, collision-resistant id. Enough without pulling in a ULID dep. */
 export function newId(prefix: string): string {
   const time = Date.now().toString(36).padStart(9, '0');
