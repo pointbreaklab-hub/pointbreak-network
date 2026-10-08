@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { session } from '$core/auth/session.svelte';
   import { db } from '$core/db';
   import { BLACK_HOLE_AFTER_DAYS, detectAll, projectAll } from '$core/math-engine';
-  import { appendEvent, PUBLISHING_ENABLED, type AppendInput } from '$core/ledger';
+  import { appendEvent, type AppendInput } from '$core/ledger';
   import { companyIdFromUrl, mintApplicationRef, normalizeJobUrl } from '$lib/identity';
   import type { LedgerEvent } from '$lib/types';
   import { ledgerDate } from '$lib/utils';
@@ -10,6 +9,7 @@
   import type { NetworkSource } from '$core/network';
   import { loadTracker } from '../data';
   import ApplicationStatus from './ApplicationStatus.svelte';
+  import Backlog from './Backlog.svelte';
   import Backup from './Backup.svelte';
 
   let events = $state<LedgerEvent[]>([]);
@@ -24,16 +24,15 @@
   let title = $state('');
   let formError = $state<string | null>(null);
   let writeError = $state<string | null>(null);
+  /** Bumped after every write so the backlog panel recounts. */
+  let changed = $state(0);
 
   /**
    * Deliberately not toggling `loading` back on: a refresh after a restore
    * should fill the table in place rather than blank it.
    */
   function refresh() {
-    const login = session.current?.github_login;
-    if (!login) return;
-
-    loadTracker(login)
+    loadTracker()
       .then((data) => {
         events = data.events;
         myRefs = data.myRefs;
@@ -60,6 +59,7 @@
     try {
       const result = await appendEvent(input);
       events = [...events, result.event];
+      changed++;
       if (result.warning) writeError = result.warning;
     } catch (e) {
       writeError = e instanceof Error ? e.message : 'Could not record that.';
@@ -130,21 +130,16 @@
       ledger, and a company action only counts once you confirm it happened, so silence cannot be
       papered over by a recruiter marking work as done.
     </p>
+    <p class="mt-2 text-sm text-muted">
+      No account needed. Log what you applied to and it is tracked here immediately.
+    </p>
   </div>
   <Backup onimported={refresh} />
 </div>
 
 <DemoNotice {source} {demo} />
 
-{#if !PUBLISHING_ENABLED}
-  <p class="mb-5 rounded-md border border-edge p-3 text-sm text-muted">
-    <strong class="text-fg">Stored on this device only.</strong>
-    Nothing you log here is published, so squad counts and company scores come from the
-    demonstration data below rather than from other real people. Export keeps a copy, because
-    clearing site data would otherwise lose it, encrypted with a passphrase because that copy is
-    the one thing that links these applications back to you.
-  </p>
-{/if}
+<Backlog {changed} onpublished={refresh} />
 
 <form onsubmit={logApplication} class="mb-6 flex flex-wrap items-end gap-3">
   <label class="grid gap-1 text-sm text-muted">

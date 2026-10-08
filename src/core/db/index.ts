@@ -13,7 +13,15 @@
 
 import Dexie, { type Table } from 'dexie';
 import type { Portfolio } from '$lib/portfolio';
-import type { ApplicationRef, Job, LedgerEvent, MessageRequest, Receipt, UserProfile } from '$lib/types';
+import type {
+  ApplicationRef,
+  Job,
+  LedgerAction,
+  LedgerEvent,
+  MessageRequest,
+  Receipt,
+  UserProfile
+} from '$lib/types';
 
 export interface CacheMeta {
   key: string;
@@ -32,6 +40,42 @@ export interface MyApplication {
   created_at: string;
 }
 
+/**
+ * An event recorded here but not yet in the shared ledger.
+ *
+ * Tracking works with no account at all, which means most events are written
+ * before there is any way to publish them. They wait here instead of being
+ * lost, and drain when someone signs in. Without this queue the only way to
+ * contribute would be to have a GitHub account ready before your first
+ * rejection, which is the wrong order and the main reason nobody would start.
+ */
+export interface OutboxEntry {
+  /** The local event id, so the queue and the record cannot drift apart. */
+  event_id: string;
+  job_id: string;
+  application_ref: ApplicationRef;
+  action: LedgerAction;
+  ref_event?: string;
+  queued_at: string;
+  /** Why the last attempt failed, kept so the UI can say rather than guess. */
+  last_error?: string;
+}
+
+/**
+ * A long-lived append capability for one posting, held locally.
+ *
+ * The service issues one per account per posting and locks it to the first
+ * application ref it carries, so it authorises the whole life of one
+ * application without the service ever learning whose it is. Losing it means
+ * that posting can no longer be published from this account, which is why it
+ * lives in the database rather than in memory.
+ */
+export interface JobToken {
+  job_id: string;
+  token: string;
+  issued_at: string;
+}
+
 export class PointBreakDB extends Dexie {
   jobs!: Table<Job, string>;
   events!: Table<LedgerEvent, string>;
@@ -41,6 +85,10 @@ export class PointBreakDB extends Dexie {
   myApplications!: Table<MyApplication, ApplicationRef>;
   /** Private until explicitly published. A CV holds personal data. */
   portfolios!: Table<Portfolio, string>;
+  /** Events waiting for a way to publish them. */
+  outbox!: Table<OutboxEntry, string>;
+  /** Append capabilities, one per posting. Private to this browser. */
+  jobTokens!: Table<JobToken, string>;
   meta!: Table<CacheMeta, string>;
 
   constructor() {
@@ -53,6 +101,21 @@ export class PointBreakDB extends Dexie {
       messages: 'thread_id, to, sent_at',
       myApplications: 'application_ref, job_id, created_at',
       portfolios: 'github_login',
+      meta: 'key'
+    });
+
+    // 4 adds the outbox and its tokens. Everything tracked before an account
+    // existed has to survive getting one.
+    this.version(4).stores({
+      jobs: 'id, company_id, status, source, first_seen_at',
+      events: 'id, job_id, application_ref, action, at',
+      profiles: 'github_login',
+      receipts: 'id, subject, kind',
+      messages: 'thread_id, to, sent_at',
+      myApplications: 'application_ref, job_id, created_at',
+      portfolios: 'github_login',
+      outbox: 'event_id, job_id, queued_at',
+      jobTokens: 'job_id',
       meta: 'key'
     });
   }
@@ -74,8 +137,9 @@ export async function markFresh(key: string, etag?: string): Promise<void> {
 /** Clears cached public data. Deliberately leaves myApplications alone. */
 export async function clearCache(): Promise<void> {
   await Promise.all(
-    // portfolios are deliberately excluded: they are the user's own work, not
-    // a cache of something fetchable.
+    // portfolios, the outbox and its tokens are deliberately excluded: none of
+    // them is a cache of something fetchable, and dropping the outbox would
+    // discard reports that have nowhere else to exist yet.
     [db.jobs, db.events, db.profiles, db.receipts, db.messages, db.meta].map((t) => t.clear())
   );
 }

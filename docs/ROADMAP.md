@@ -18,6 +18,10 @@ wins wherever the two disagree.
 
 These are binding. A change that violates one is a bug, not a trade-off.
 
+0. **Nothing between a person and their first report.** Tracking needs no
+   account, no token and no server. Identity is what you add when you want your
+   reports to count publicly, never what you present to begin. A rule because
+   it is the first thing that gets traded away for a feature.
 1. **No traditional backend.** The SvelteKit app is 100% static. No Node/Express/
    Python server in this repo.
 2. **Git as a database.** All data (profiles, jobs, events) is JSON/JSONL in
@@ -52,7 +56,10 @@ These are binding. A change that violates one is a bug, not a trade-off.
 
 - [x] **3.1** Ship Logs profile: repos, commit history, verified skills, merged-PR timeline
 - [x] **3.2** Job board: salaries, tech stacks, transparency badges, external postings (fixture-backed)
-- [x] **3.3** Black Hole Tracker: states, 14-day flag, Squad count, claim attestation, external logging (fixture-backed)
+- [x] **3.3** Black Hole Tracker: states, 14-day flag, Squad count, claim
+      attestation, external logging. Works signed out: no account, no token, no
+      server. Unpublished events queue in a local outbox and are published when
+      someone signs in
 - [~] **3.4** Async encrypted messaging. Inbox UI renders its empty state. No key
       exchange, no polling, no data source, no commit path
 

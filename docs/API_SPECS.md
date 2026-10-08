@@ -126,6 +126,19 @@ not receive. Company claims are worth nothing until the candidate they name
 confirms them, and an unconfirmed claim **does not reset the Black Hole clock**.
 A dispute always beats a confirmation on the same event.
 
+### Who may append
+
+Publishing to the shared ledger needs a verified GitHub account and passes
+every sybil guard in PRD 4a. Recording an event does not: the app tracks
+locally with no account at all, and anything it cannot publish waits in a local
+outbox until someone signs in. The ledger's contents are therefore always
+verified, while the act of starting to report is free.
+
+An append token is issued once per account per posting and is then reusable for
+the life of that application, locked to the first `application_ref` it carries.
+One token per posting still means one application per posting, and an
+application can report everything that happens to it.
+
 ### Timestamps
 
 `at` is a UTC date with no time of day, on every ledger line, stamped by the

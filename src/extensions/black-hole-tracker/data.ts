@@ -16,10 +16,12 @@ export interface TrackerData {
 /**
  * Merges the shared ledger with local writes.
  *
- * Local entries are yours and always present. Shared ones supply the squad
- * counts, which is the only part that needs other people.
+ * Takes no identity, because none is needed. Local entries are yours and
+ * always present; shared ones supply the squad counts, which is the only part
+ * that needs other people. Tracking therefore works signed out, which is the
+ * state everybody is in when they get their first rejection.
  */
-export async function loadTracker(_login: string): Promise<TrackerData> {
+export async function loadTracker(): Promise<TrackerData> {
   const [network, mine, recorded] = await Promise.all([
     loadNetwork(),
     db.myApplications.toArray(),

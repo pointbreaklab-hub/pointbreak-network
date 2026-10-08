@@ -4,9 +4,15 @@
  * Two modes, chosen at build time by PUBLIC_PUBLISH_LEDGER.
  *
  * Local (the default). Events are written to IndexedDB and nowhere else. Your
- * tracker works, persists across reloads, and needs no server at all. What you
- * give up is everything that requires other people: squad counts, and any
- * company score built from more than your own reports.
+ * tracker works, persists across reloads, and needs no server, no account and
+ * no token. What you give up is everything that requires other people: squad
+ * counts, and any company score built from more than your own reports.
+ *
+ * Needing no account is the point rather than a convenience. Nobody has a
+ * GitHub account ready before their first rejection, and a product whose first
+ * screen demands one collects nothing. So tracking is free and immediate,
+ * everything written is queued in the outbox, and signing in later publishes
+ * the backlog. Verification is the upgrade, never the entry fee.
  *
  * Published. Events additionally go to the ledger service in `server/`, which
  * commits them to the public repo. Only worth switching on once several people
@@ -22,7 +28,7 @@
  */
 
 import { session } from '$core/auth/session.svelte';
-import { db } from '$core/db';
+import { db, type OutboxEntry } from '$core/db';
 import { decryptBackup, encryptBackup, isEncryptedBackup } from '$lib/backup';
 import type { LedgerAction, LedgerEvent } from '$lib/types';
 import { ledgerDate } from '$lib/utils';
@@ -42,7 +48,7 @@ export class LedgerError extends Error {
 
 const MESSAGES: Record<string, string> = {
   already_claimed:
-    'You have already logged an application for this posting. One per account keeps squad counts honest.',
+    'This account already holds the append capability for this posting, and it is not on this device. There is no reissue: recovering it would mean the service remembering which token it gave to whom, which is the link the pseudonym exists to prevent. This posting stays local.',
   account_too_new:
     'This GitHub account is too new to append to the shared ledger. The age requirement is what stops throwaway accounts manufacturing agreement.',
   monthly_budget_exhausted: 'You have reached this month’s publish limit.',
@@ -61,7 +67,8 @@ const MESSAGES: Record<string, string> = {
   // Transient protocol failures. A user can only retry.
   token_expired: 'That took too long. Saved locally, try publishing again.',
   bad_token_signature: 'The publishing service rejected the request. Saved locally.',
-  token_already_used: 'Already published. Saved locally.',
+  token_bound_to_another_application:
+    'This posting is already tracked under a different application on this account. Saved locally.',
   git_write_failed:
     'Saved on this device, but the ledger could not be written. Nothing is lost, try again later.',
   note_too_long: 'That note is too long. Keep it under 500 characters.'
@@ -116,9 +123,18 @@ export interface AppendInput {
 export interface AppendResult {
   event: LedgerEvent;
   published: boolean;
-  /** Set when the local write succeeded but publishing did not. */
+  /**
+   * Set when the local write succeeded and publishing genuinely failed.
+   *
+   * Not set when there was simply nobody signed in: that is the normal path,
+   * not a fault, and the event is queued. Calling it an error would turn the
+   * ordinary case into a red message on every single action.
+   */
   warning?: string;
 }
+
+/** Codes that mean "there is nothing to publish to yet", not "something broke". */
+const EXPECTED_WHEN_SIGNED_OUT = new Set(['not_signed_in', 'missing_token']);
 
 function makeEvent(input: AppendInput): LedgerEvent {
   return {
@@ -134,34 +150,138 @@ function makeEvent(input: AppendInput): LedgerEvent {
   };
 }
 
+async function enqueue(event: LedgerEvent, error?: string): Promise<void> {
+  const entry: OutboxEntry = {
+    event_id: event.id,
+    job_id: event.job_id,
+    application_ref: event.application_ref,
+    action: event.action,
+    ref_event: event.ref_event,
+    queued_at: new Date().toISOString(),
+    last_error: error
+  };
+  await db.outbox.put(entry);
+}
+
+/**
+ * An append capability for one posting.
+ *
+ * Issued once per account per posting and then reused for the life of that
+ * application, because the events that matter most arrive after the first one:
+ * a rejection, an interview, the confirmation of a company claim. Kept locally
+ * so the service is asked only once.
+ */
+async function tokenFor(jobId: string): Promise<string> {
+  const held = await db.jobTokens.get(jobId);
+  if (held) return held.token;
+
+  const { token } = await post<{ token: string }>(
+    '/ledger/token',
+    { job_id: jobId, scope: 'ledger' },
+    true
+  );
+
+  await db.jobTokens.put({ job_id: jobId, token, issued_at: new Date().toISOString() });
+  return token;
+}
+
+async function publishOne(entry: AppendInput): Promise<void> {
+  const token = await tokenFor(entry.job_id);
+  await post('/ledger/append', { token, event: { ...entry, actor: 'candidate', at: '' } }, false);
+}
+
 /**
  * Records an event.
  *
  * The local write is the commit, not a guess pending confirmation, so this does
  * not roll back when publishing fails. Losing what you recorded because a
- * server was unreachable would be the worse failure.
+ * server was unreachable, or because you had not signed in yet, would be the
+ * worse failure. Anything unpublished goes to the outbox instead.
  */
 export async function appendEvent(input: AppendInput): Promise<AppendResult> {
   const event = makeEvent(input);
   await db.events.put(event);
 
-  if (!PUBLISHING_ENABLED) return { event, published: false };
+  if (!PUBLISHING_ENABLED || !session.current) {
+    await enqueue(event);
+    return { event, published: false };
+  }
 
   try {
-    const { token } = await post<{ token: string }>(
-      '/ledger/token',
-      { job_id: input.job_id, scope: 'ledger' },
-      true
-    );
-    await post('/ledger/append', { token, event: { ...input, actor: 'candidate', at: '' } }, false);
+    await publishOne(input);
     return { event, published: true };
   } catch (e) {
+    const code = e instanceof LedgerError ? e.code : 'unknown';
+    const message = e instanceof Error ? e.message : 'Could not publish.';
+
+    await enqueue(event, message);
     return {
       event,
       published: false,
-      warning: e instanceof Error ? e.message : 'Could not publish.'
+      warning: EXPECTED_WHEN_SIGNED_OUT.has(code) ? undefined : message
     };
   }
+}
+
+export interface BacklogResult {
+  published: number;
+  /** Still queued after this attempt. */
+  remaining: number;
+  /** The first thing that went wrong, for an honest message. */
+  error?: string;
+}
+
+/** How many recorded events have never reached the shared ledger. */
+export async function backlogSize(): Promise<number> {
+  return db.outbox.count();
+}
+
+/**
+ * Publishes everything recorded before there was a way to publish it.
+ *
+ * Stops early on failures that will repeat for every remaining entry, because
+ * walking a hundred of them into the same rejected token helps nobody and
+ * hammers the service. Per-posting failures do not stop the run: one posting
+ * this account has already acted on should not block the other ninety-nine.
+ */
+const STOP_THE_RUN = new Set([
+  'not_signed_in',
+  'missing_token',
+  'bad_github_token',
+  'monthly_budget_exhausted',
+  'service_unreachable',
+  'account_too_new'
+]);
+
+export async function publishBacklog(): Promise<BacklogResult> {
+  if (!PUBLISHING_ENABLED) {
+    throw new LedgerError(
+      'This build does not publish, so there is nowhere to send these yet. They stay on this device.',
+      'publishing_disabled'
+    );
+  }
+  if (!session.current) throw new LedgerError('Sign in first.', 'not_signed_in');
+
+  const queued = await db.outbox.orderBy('queued_at').toArray();
+  let published = 0;
+  let error: string | undefined;
+
+  for (const entry of queued) {
+    try {
+      await publishOne(entry);
+      await db.outbox.delete(entry.event_id);
+      published++;
+    } catch (e) {
+      const code = e instanceof LedgerError ? e.code : 'unknown';
+      const message = e instanceof Error ? e.message : 'Could not publish.';
+
+      error ??= message;
+      await db.outbox.update(entry.event_id, { last_error: message });
+      if (STOP_THE_RUN.has(code)) break;
+    }
+  }
+
+  return { published, remaining: await db.outbox.count(), error };
 }
 
 export async function vouch(subject: string, skill: string, note?: string): Promise<void> {

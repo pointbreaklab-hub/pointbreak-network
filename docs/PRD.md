@@ -257,13 +257,41 @@ scoped by them, revocable by them, and no third party issues or holds anything.
 Read-only public access plus profile is enough. Nothing in the app asks for
 write scope.
 
+### No account to start
+
+The hardest problem this product has is not accuracy, it is that nobody
+contributes. Every design above assumes reports exist, and until recently the
+first screen asked for a GitHub account over thirty days old and a personal
+access token before a single ghosting could be recorded. Almost nobody has
+either ready at the moment they want to report, and most never will.
+
+So identity is now an upgrade rather than an entry fee.
+
+- **Tracking requires nothing.** No account, no token, no server. Log what you
+  applied to, watch the silence clock, attest to company claims, back the whole
+  thing up. It is useful to one person on their own, which is what gives anyone
+  a reason to return before the network exists.
+- **Everything written is queued.** Events recorded with no way to publish them
+  go to a local outbox rather than being dropped.
+- **Signing in publishes the backlog.** The reports someone already made start
+  counting, under a random reference that carries no name.
+
+This changes nothing about what the shared ledger will accept. Publishing still
+needs a verified account and still passes every sybil guard below. The change is
+only that verification happens when someone has already decided this is worth
+something, instead of before they have seen it work.
+
 ### Sybil resistance
 
 Squad counts are the most visible number in the product, so manufacturing them
 has to cost something.
 
 - **One token per account per posting.** A single person cannot mint twenty refs
-  against one job.
+  against one job. The token is reusable and locks onto the first reference it
+  carries, so one application can report everything that happens to it over
+  months while still being one application. A single-use token would have meant
+  a submission could be published and the rejection that followed could not,
+  which would have quietly removed most of the evidence the scores run on.
 - **Minimum account age**, default 30 days. Throwaway accounts are the cheapest
   way to fake consensus.
 - **Monthly append budget**, default 60, which bounds the damage if someone

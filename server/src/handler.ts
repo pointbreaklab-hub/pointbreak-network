@@ -49,6 +49,21 @@ export interface Config {
 const GITHUB_API = 'https://api.github.com';
 const TOKEN_TTL_SECONDS = 900;
 
+/**
+ * Ledger tokens outlive the request that fetched them, by a lot.
+ *
+ * An application is not one event. It is a submission, then weeks of silence,
+ * then perhaps a rejection or an interview, then the candidate confirming or
+ * disputing what the company claimed. Those are the events that make the whole
+ * attestation model work, and they arrive months apart. A fifteen minute token
+ * could only ever carry the first one.
+ *
+ * The token is a capability for one posting under one ref, so a stolen one
+ * buys the thief the ability to append to a single application that is not
+ * theirs. That is a small blast radius for the thing it makes possible.
+ */
+const LEDGER_TOKEN_TTL_SECONDS = 365 * 24 * 60 * 60;
+
 export class HttpError extends Error {
   constructor(
     message: string,
@@ -156,6 +171,15 @@ interface TokenClaims {
  *
  * The guard key is an HMAC of login and job id, so the store holds no login, no
  * job id and no ref. It answers one question: has this pair been seen.
+ *
+ * The token is reusable and the guard still holds, because the token binds to
+ * the first application ref it carries (see append). One token per account per
+ * posting therefore still means one application per account per posting, while
+ * allowing that application to have a life.
+ *
+ * There is no reissue. Recovering a lost token would mean the service
+ * remembering which nonce it gave to which account, which is exactly the link
+ * that must not exist. Losing it costs that one posting.
  */
 async function issueToken(request: Request, config: Config, store: Store): Promise<Response> {
   const { job_id, scope = 'ledger' } = (await request.json()) as {
@@ -176,10 +200,12 @@ async function issueToken(request: Request, config: Config, store: Store): Promi
   const spent = Number((await store.get(budgetKey)) ?? 0);
   if (spent >= config.monthlyAppendBudget) throw new HttpError('monthly_budget_exhausted', 429);
 
+  const ttl = scope === 'ledger' ? LEDGER_TOKEN_TTL_SECONDS : TOKEN_TTL_SECONDS;
+
   const claims: TokenClaims = {
     job_id,
     nonce: crypto.randomUUID(),
-    exp: Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS,
+    exp: Math.floor(Date.now() / 1000) + ttl,
     scope
   };
 
@@ -189,7 +215,7 @@ async function issueToken(request: Request, config: Config, store: Store): Promi
   await store.put(budgetKey, String(spent + 1), { ttlSeconds: 60 * 60 * 24 * 40 });
 
   return json(
-    { token: await signToken(claims, config.tokenSigningKey), expires_in: TOKEN_TTL_SECONDS },
+    { token: await signToken(claims, config.tokenSigningKey), expires_in: ttl },
     config
   );
 }
@@ -246,11 +272,22 @@ async function append(request: Request, config: Config, store: Store): Promise<R
   if (claims.scope !== 'ledger') throw new HttpError('wrong_token_scope', 403);
   if (claims.job_id !== event.job_id) throw new HttpError('token_job_mismatch', 403);
 
-  const spentKey = `spent:${claims.nonce}`;
-  if (await store.get(spentKey)) throw new HttpError('token_already_used', 409);
-
   if (!/^app_[0-9a-f]{32}$/.test(event.application_ref)) {
     throw new HttpError('bad_application_ref', 400);
+  }
+
+  // The token locks onto the first ref it carries and stays locked. That is
+  // what keeps a reusable token from becoming a way to mint twenty refs against
+  // one posting, which is the attack the one-per-posting guard exists to stop.
+  //
+  // Both sides of the comparison are HMACs, so the guard store still holds no
+  // application ref in the clear and a dump of it deanonymises nobody.
+  const bindingKey = `ref:${await hmacHex(config.tokenSigningKey, claims.nonce)}`;
+  const fingerprint = await hmacHex(config.tokenSigningKey, event.application_ref);
+  const bound = await store.get(bindingKey);
+
+  if (bound && !timingSafeEqual(bound, fingerprint)) {
+    throw new HttpError('token_bound_to_another_application', 403);
   }
   if (event.actor !== 'candidate' || !CANDIDATE_ACTIONS.has(event.action)) {
     // Company claims arrive on an authenticated company route. A candidate must
@@ -272,7 +309,7 @@ async function append(request: Request, config: Config, store: Store): Promise<R
   });
 
   await appendLine(config, `events/${event.job_id}.jsonl`, line, `ledger: ${event.action}`);
-  await store.put(spentKey, '1', { ttlSeconds: TOKEN_TTL_SECONDS + 60 });
+  if (!bound) await store.put(bindingKey, fingerprint);
 
   return json({ ok: true }, config);
 }
